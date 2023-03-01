@@ -174,7 +174,7 @@
 									Car game in which the player has to draw path to overcome the hurdles places on their way to the final goal.
 								</p>
 								<div>
-										<video autoplay loop muted playsinline src="carpath.mp4" alt="" width="400" height="300"></video>
+										<video id="gif-video" autoplay loop muted playsinline src="carpath.mp4" alt="" width="400" height="300"></video>
 										<p>Player can draw path for the car to reach the end point.</p>
 								</div>
 								<iframe width="560" height="315" src="https://www.youtube.com/embed/HNl7Xe6BQS4" frameborder="0" allowfullscreen></iframe>
@@ -280,6 +280,10 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script>
+			  var myVideo = document.getElementById('gif-video');
+			  myVideo.playbackRate = 2.0;
+			</script>
 
 	</body>
 </html>
