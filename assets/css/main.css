@@ -36,7 +36,10 @@ body {
 ol, ul {
 	list-style: none;
 }
-
+.parallax-container {
+  background: url('path/to/video.mp4');
+  background-size: cover;
+}
 blockquote, q {
 	quotes: none;
 }

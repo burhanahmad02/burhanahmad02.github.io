@@ -81,7 +81,9 @@
 					</header>
 
 				<!-- Main -->
-					<div id="main">
+				<div class="parallax-container">
+				  <!-- Your website content goes here -->
+				  <div id="main">
 
 						<!-- Intro -->
 							<article id="intro">
@@ -278,6 +280,8 @@
 					</footer>
 
 			</div>
+				</div>
+					
 
 		<!-- BG -->
 			<div id="bg"></div>
@@ -291,6 +295,21 @@
 			<script>
 			  var myVideo = document.getElementById('gif-video');
 			  myVideo.playbackRate = 5.0;
+			</script>
+			<script>
+			  // Your JavaScript code goes here
+			  var videos = [
+				'images/achshow.mp4',
+				'images/mine.mp4',
+				'images/carpath.mp4'
+			  ];
+
+			  var randomIndex = Math.floor(Math.random() * videos.length);
+			  var randomVideo = videos[randomIndex];
+
+			  var parallaxContainer = document.querySelector('.parallax-container');
+			  parallaxContainer.style.background = 'url(' + randomVideo + ') no-repeat center center fixed';
+			  parallaxContainer.style.backgroundSize = 'cover';
 			</script>
 
 	</body>
