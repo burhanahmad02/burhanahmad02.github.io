@@ -37,27 +37,6 @@ ol, ul {
 	list-style: none;
 }
 
-blockquote, q {
-	quotes: none;
-}
-
-	blockquote:before, blockquote:after, q:before, q:after {
-		content: '';
-		content: none;
-	}
-
-table {
-	border-collapse: collapse;
-	border-spacing: 0;
-}
-
-
-body {
--webkit-text-size-adjust: none;
-  background: url('your-background-video-file.mp4') no-repeat center center fixed;
-  background-size: cover;
-  filter: blur(5px);
-}
 
 button {
   animation: pulse 1s infinite;
@@ -73,6 +52,24 @@ button {
   100% {
     transform: scale(1);
   }
+}
+
+blockquote, q {
+	quotes: none;
+}
+
+	blockquote:before, blockquote:after, q:before, q:after {
+		content: '';
+		content: none;
+	}
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+body {
+	-webkit-text-size-adjust: none;
 }
 
 mark {
