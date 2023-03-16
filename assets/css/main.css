@@ -36,8 +36,6 @@ body {
 ol, ul {
 	list-style: none;
 }
-
-
 button {
   animation: pulse 1s infinite;
 }
@@ -53,7 +51,6 @@ button {
     transform: scale(1);
   }
 }
-
 blockquote, q {
 	quotes: none;
 }
