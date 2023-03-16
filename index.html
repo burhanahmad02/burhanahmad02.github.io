@@ -292,6 +292,12 @@
 			  var myVideo = document.getElementById('gif-video');
 			  myVideo.playbackRate = 5.0;
 			</script>
-
+			<script>
+				var backgrounds = ["images/carpath.mp4", "images/mine.mp4", "images/shooting.mp4"];
+				var index = Math.floor(Math.random() * backgrounds.length);
+				var backgroundContainer = document.querySelector(".background-container");
+				backgroundContainer.style.background = "url('" + backgrounds[index] + "') no-repeat center center fixed";
+				backgroundContainer.style.backgroundSize = "cover";
+			</script>
 	</body>
 </html>
