@@ -36,12 +36,8 @@
 	</head>
 
 	
-	
+	<body class="is-preload">
 
-				<!-- Main -->
-				
-		<div class="parallax-container">
-		<body class="is-preload">
 		<!-- Wrapper -->
 			<div id="wrapper">
 
@@ -49,7 +45,8 @@
 					<header id="header">
 						<div class="logo">
 							<img class="mg" src="images/patatadance.gif" alt="" />
-						
+							<span class="image main">
+							</span>
 						</div>
 						<div class="content">
 							<div class="inner">
@@ -82,17 +79,18 @@
 							</ul>
 						</nav>
 					</header>
-				  <!-- Your website content goes here -->
-				  <div id="main">
+
+				<!-- Main -->
+					<div id="main">
 
 						<!-- Intro -->
 							<article id="intro">
-								<h2 class="major">Welcome to my Game World!</h2>
-								<span class="image main"><img src="images/burhan.png" style="width:60%; height:80%; margin-left: auto; margin-right: auto" alt="" /></span>
-								<p>Hello! I'm Muhammad Burhan Ahmad, a game developer from Islamabad, Pakistan, currently living in Dubai, UAE.</p>
-								<p>I'm passionate about creating video games that are entertaining and visually stunning. I love taking on new challenges and learning about new technologies in the game development world.</p>
-								<p>Explore my website and see what kind of games I've made so far. Who knows, maybe we'll collaborate on a game together someday!</p>
-							</article>
+							<h2 class="major">Welcome to my Game World!</h2>
+							<span class="image main"><img src="images/burhan.png" style="width:60%; height:80%; margin-left: auto; margin-right: auto" alt="" /></span>
+							<p>Hello! I'm Muhammad Burhan Ahmad, a game developer from Islamabad, Pakistan, currently living in Dubai, UAE.</p>
+							<p>I'm passionate about creating video games that are entertaining and visually stunning. I love taking on new challenges and learning about new technologies in the game development world.</p>
+							<p>Explore my website and see what kind of games I've made so far. Who knows, maybe we'll collaborate on a game together someday!</p>
+						</article>
 
 						<!-- Work -->
 							<article id="Projects">
@@ -276,14 +274,10 @@
 					<footer id="footer">
 						<!--
 							<p class="copyright">&copy; Untitled. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
-
 		-->
-		
-			</div>
 					</footer>
 
-		</div>
-					
+			</div>
 
 		<!-- BG -->
 			<div id="bg"></div>
@@ -297,21 +291,6 @@
 			<script>
 			  var myVideo = document.getElementById('gif-video');
 			  myVideo.playbackRate = 5.0;
-			</script>
-			<script>
-			  // Your JavaScript code goes here
-			  var videos = [
-				'images/achshow.mp4',
-				'images/mine.mp4',
-				'images/carpath.mp4'
-			  ];
-
-			  var randomIndex = Math.floor(Math.random() * videos.length);
-			  var randomVideo = videos[randomIndex];
-
-			  var parallaxContainer = document.querySelector('.parallax-container');
-			  parallaxContainer.style.background = 'url(' + randomVideo + ') no-repeat center center fixed';
-			  parallaxContainer.style.backgroundSize = 'cover';
 			</script>
 
 	</body>
