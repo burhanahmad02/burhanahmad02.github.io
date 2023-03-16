@@ -39,23 +39,6 @@ ol, ul {
 button {
   animation: pulse 1s infinite;
 }
-a {
-  display: inline-block;
-  padding: 10px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  text-align: center;
-  text-decoration: none;
-  color: #fff;
-  background-color: #4CAF50;
-  border-radius: 5px;
-  transition: all 0.3s ease-in-out;
-}
-
-a:hover {
-  background-color: #3E8E41;
-  cursor: pointer;
-}
 
 @keyframes pulse {
   0% {
