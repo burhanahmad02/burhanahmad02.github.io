@@ -319,7 +319,7 @@
         // Create glowing text
         const loader = new THREE.FontLoader();
         loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-            const textGeometry = new THREE.TextGeometry('Glowing Text', {
+            const textGeometry = new THREE.TextGeometry('Burhan is updating the interactive Projects!', {
                 font: font,
                 size: 0.5,
                 height: 0.1,
@@ -335,7 +335,7 @@
             scene.add(glowingText);
 
             // Create physics object
-            const shape = new CANNON.Box(new CANNON.Vec3(0.25, 0.25, 0.05));
+            const shape = new CANNON.Box(new CANNON.Vec3(1, 0.5, 0.05)); // Adjust size to fit text
             glowingTextPhysics = new CANNON.Body({
                 mass: 1,
                 position: new CANNON.Vec3(0, 0, 0),
