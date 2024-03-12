@@ -93,12 +93,12 @@
 								<p>Explore my website and see what kind of games, interactive mechanisms and immersive experiences I've worked on so far. Who knows, maybe we'll collaborate on a something amazing together someday!</p>
 					
 							</article>
-
-							<!-- Work -->
-							<article id="Projects" style="position: relative;">
-								<h2 class="major" id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 20px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</h2>
-								<div id="particle-container" style="width: 100%; height: 400px;"></div>
-							</article>
+						<!-- Work -->
+						<article id="Projects" style="position: relative;">
+							<h2 class="major">Interactive Particle System</h2>
+							<div id="particle-container" style="width: 100%; height: 400px;"></div>
+							<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 20px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
+						</article>
 						<!-- Work -->
 							<article id="OldProjects">
 
@@ -292,18 +292,14 @@
 			<div id="bg"></div>
 
 		<!-- Scripts -->
-	<!-- Scripts -->
+<!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
     // Initialize variables
     let scene, camera, renderer;
     let particles = [];
     let cursorTrail = [];
-    let textVelocityX = 2; // Initial velocity along X-axis
-    let textVelocityY = 2; // Initial velocity along Y-axis
-    let textElement = document.getElementById('glowing-text');
-    let containerWidth = document.getElementById('particle-container').clientWidth;
-    let containerHeight = document.getElementById('particle-container').clientHeight;
+    let smokeParticles = [];
 
     // Function to initialize the scene
     function init() {
@@ -316,17 +312,27 @@
 
         // Create renderer
         renderer = new THREE.WebGLRenderer();
-        renderer.setSize(containerWidth, containerHeight);
+        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
+        // Create particles
+        const particleCount = 1000;
+        const particleGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i++) {
+            positions[i] = Math.random() * 2000 - 1000; // Random position
+        }
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+        const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particleSystem);
+        particles.push(particleSystem);
+
         // Add event listener for mouse movement
-        document.getElementById('particle-container').addEventListener('mousemove', onMouseMove, false);
+        document.addEventListener('mousemove', onMouseMove, false);
 
         // Add event listener for mouse click
-        document.getElementById('particle-container').addEventListener('click', onMouseClick, false);
-
-        // Start text movement animation
-        moveText();
+        document.addEventListener('click', onMouseClick, false);
     }
 
     // Function to handle mouse movement
@@ -358,8 +364,12 @@
         const smokeParticle = new THREE.Mesh(smokeGeometry, smokeMaterial);
         smokeParticle.position.set(mouseX, mouseY, 0);
         scene.add(smokeParticle);
+        smokeParticles.push(smokeParticle);
+
+        // Remove smoke particles after 1 second
         setTimeout(() => {
             scene.remove(smokeParticle);
+            smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
         }, 1000);
     }
 
@@ -388,35 +398,19 @@
         }
     }
 
-    // Function to move text like TV logo
-    function moveText() {
-        // Get text position
-        let textPositionX = parseFloat(textElement.style.left);
-        let textPositionY = parseFloat(textElement.style.top);
-
-        // Update text position
-        textPositionX += textVelocityX;
-        textPositionY += textVelocityY;
-
-        // Check collision with container edges
-        if (textPositionX <= 0 || textPositionX >= containerWidth - textElement.offsetWidth) {
-            textVelocityX *= -1;
-        }
-        if (textPositionY <= 0 || textPositionY >= containerHeight - textElement.offsetHeight) {
-            textVelocityY *= -1;
-        }
-
-        // Set new text position
-        textElement.style.left = textPositionX + 'px';
-        textElement.style.top = textPositionY + 'px';
-
-        // Call moveText recursively
-        requestAnimationFrame(moveText);
-    }
-
     // Initialize and start animation
     init();
     animate();
+
+    // Resize renderer when window is resized
+    window.addEventListener('resize', onWindowResize, false);
+
+    // Function to handle window resize
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
+    }
 </script>
 		<!-- Include Three.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
