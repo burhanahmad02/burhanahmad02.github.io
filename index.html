@@ -300,6 +300,7 @@
     let particles = [];
     let cursorTrail = [];
     let smokeParticles = [];
+    let gravity = -0.5;
 
     // Function to initialize the scene
     function init() {
@@ -370,12 +371,33 @@
             scene.add(smokeParticle);
             smokeParticles.push(smokeParticle);
 
-            // Remove smoke particles after 1 second
-            setTimeout(() => {
-                scene.remove(smokeParticle);
-                smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
-            }, 1000);
+            // Apply physics to smoke particles
+            applyPhysics(smokeParticle);
         }
+    }
+
+    // Function to apply physics to smoke particles
+    function applyPhysics(particle) {
+        const initialY = particle.position.y;
+        const velocity = 0;
+
+        function update() {
+            velocity += gravity;
+            particle.position.y += velocity;
+
+            // Check if particle touches bottom of container
+            if (particle.position.y <= -document.getElementById('particle-container').clientHeight / 2) {
+                // Wait for 2 seconds and then destroy particle
+                setTimeout(() => {
+                    scene.remove(particle);
+                    smokeParticles.splice(smokeParticles.indexOf(particle), 1);
+                }, 2000);
+            } else {
+                requestAnimationFrame(update);
+            }
+        }
+
+        update();
     }
 
     // Function to generate random color
