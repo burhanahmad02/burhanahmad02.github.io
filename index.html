@@ -96,9 +96,8 @@
 
 							<!-- Work -->
 							<article id="Projects">
-								<h2 class="major">Interactive Projects</h2>
-								<button id="showThreeJsScene">Show Three.js Scene</button> <!-- Button to show/hide Three.js scene -->
-								<div id="threeJsContainer"></div> <!-- Container for Three.js scene -->
+								<h2 class="major">Interactive Particle System</h2>
+								<div id="particle-container"></div>
 							</article>
 						<!-- Work -->
 							<article id="OldProjects">
@@ -293,113 +292,72 @@
 			<div id="bg"></div>
 
 		<!-- Scripts -->
-		<!-- Include Three.js library -->
+		<!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-    let scene, camera, renderer, cube, sphere, cubeText, sphereText; // Declare variables for scene components
+    // Initialize variables
+    let scene, camera, renderer;
+    let particles = [];
 
-    // Function to create and render Three.js scene
-    function createThreeJsScene() {
-        // Check if scene is already initialized, if so, clear it
-        if (scene) {
-            scene.remove(cube);
-            scene.remove(sphere);
-            scene.remove(cubeText);
-            scene.remove(sphereText);
-        }
-
-        // Set up Three.js scene
+    // Function to initialize the scene
+    function init() {
+        // Create scene
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        // Create camera
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 1000;
+
+        // Create renderer
         renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('particle-container').appendChild(renderer.domElement);
 
-        // Append renderer's DOM element to container
-        const container = document.getElementById('threeJsContainer');
-        container.appendChild(renderer.domElement);
-
-        // Create a cube geometry
-        const geometryCube = new THREE.BoxGeometry();
-        // Create a sphere geometry
-        const geometrySphere = new THREE.SphereGeometry(1, 32, 32);
-
-        // Create materials
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
-        // Create cube and sphere meshes
-        cube = new THREE.Mesh(geometryCube, material);
-        sphere = new THREE.Mesh(geometrySphere, material);
-
-        // Set initial positions
-        cube.position.x = -2; // Position cube to the left
-        sphere.position.x = 2; // Position sphere to the right
-
-        // Add cube and sphere to the scene
-        scene.add(cube);
-        scene.add(sphere);
-
-        // Create 3D text
-        const textGeometry = new THREE.TextGeometry('Burhan is updating the website', {
-            font: new THREE.FontLoader().load('fonts/helvetiker_regular.typeface.json'),
-            size: 0.2,
-            height: 0.1
-        });
-        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        cubeText = new THREE.Mesh(textGeometry, textMaterial);
-        sphereText = new THREE.Mesh(textGeometry, textMaterial);
-
-        // Position text
-        cubeText.position.set(-1, 0, 1);
-        sphereText.position.set(1, 0, 1);
-
-        // Add text to the scene
-        scene.add(cubeText);
-        scene.add(sphereText);
-
-        // Position the camera
-        camera.position.z = 5;
-
-        // Function to animate the scene
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Rotate shapes
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-            sphere.rotation.x += 0.01;
-            sphere.rotation.y += 0.01;
-
-            // Render the scene
-            renderer.render(scene, camera);
+        // Create particles
+        const particleCount = 1000;
+        const particleGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i++) {
+            positions[i] = Math.random() * 2000 - 1000; // Random position
         }
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+        const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particleSystem);
+        particles.push(particleSystem);
 
-        // Start animation
-        animate();
+        // Add event listener for mouse movement
+        document.addEventListener('mousemove', onMouseMove, false);
     }
 
-    // Function to switch between shapes
-    function switchShapes() {
-        if (scene) {
-            // Swap positions of cube and sphere
-            scene.remove(cube);
-            scene.remove(sphere);
-            scene.remove(cubeText);
-            scene.remove(sphereText);
-            scene.add(sphere);
-            scene.add(cube);
-            scene.add(sphereText);
-            scene.add(cubeText);
+    // Function to handle mouse movement
+    function onMouseMove(event) {
+        // Update particle positions based on mouse movement
+        const mouseX = event.clientX - window.innerWidth / 2;
+        const mouseY = event.clientY - window.innerHeight / 2;
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].rotation.y += mouseX * 0.001;
+            particles[i].rotation.x += mouseY * 0.001;
         }
     }
 
-    // Event listener for button click
-    document.getElementById('showThreeJsScene').addEventListener('click', createThreeJsScene);
+    // Function to animate the scene
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+    }
 
-    // Event listener for scene click to switch shapes
-    document.getElementById('threeJsContainer').addEventListener('click', switchShapes);
+    // Function to render the scene
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    // Initialize and start animation
+    init();
+    animate();
 </script>
-<!-- Create a canvas where Three.js will render -->
-<canvas id="threeCanvas"></canvas>
+		<!-- Include Three.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 
 			<script src="assets/js/jquery.min.js"></script>
