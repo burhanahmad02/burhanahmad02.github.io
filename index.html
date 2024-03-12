@@ -95,9 +95,10 @@
 							</article>
 
 							<!-- Work -->
-							<article id="Projects">
+							<article id="Projects" style="position: relative;">
 								<h2 class="major">Interactive Particle System</h2>
 								<div id="particle-container" style="width: 100%; height: 400px;"></div>
+								<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 10px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
 							</article>
 						<!-- Work -->
 							<article id="OldProjects">
@@ -298,6 +299,7 @@
     // Initialize variables
     let scene, camera, renderer;
     let particles = [];
+    let cursorTrail = [];
 
     // Function to initialize the scene
     function init() {
@@ -339,6 +341,13 @@
             particles[i].rotation.y += mouseX * 0.001;
             particles[i].rotation.x += mouseY * 0.001;
         }
+
+        // Create cursor trail
+        const cursorPosition = new THREE.Vector3(mouseX, -mouseY, 0);
+        cursorTrail.push(cursorPosition);
+        if (cursorTrail.length > 50) {
+            cursorTrail.shift();
+        }
     }
 
     // Function to animate the scene
@@ -350,6 +359,15 @@
     // Function to render the scene
     function render() {
         renderer.render(scene, camera);
+
+        // Draw cursor trail
+        const trailGeometry = new THREE.BufferGeometry().setFromPoints(cursorTrail);
+        const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 5 });
+        const trail = new THREE.Line(trailGeometry, trailMaterial);
+        scene.add(trail);
+        if (cursorTrail.length > 1) {
+            scene.remove(scene.children[scene.children.length - 1]);
+        }
     }
 
     // Initialize and start animation
