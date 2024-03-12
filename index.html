@@ -97,7 +97,7 @@
 							<!-- Work -->
 							<article id="Projects">
 								<h2 class="major">Interactive Particle System</h2>
-								<div id="particle-container"></div>
+								<div id="particle-container" style="width: 100%; height: 400px;"></div>
 							</article>
 						<!-- Work -->
 							<article id="OldProjects">
@@ -310,7 +310,7 @@
 
         // Create renderer
         renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
         // Create particles
@@ -355,6 +355,16 @@
     // Initialize and start animation
     init();
     animate();
+
+    // Resize renderer when window is resized
+    window.addEventListener('resize', onWindowResize, false);
+
+    // Function to handle window resize
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
+    }
 </script>
 		<!-- Include Three.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
