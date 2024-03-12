@@ -95,9 +95,8 @@
 							</article>
 						<!-- Work -->
 						<article id="Projects" style="position: relative;">
-							<h2 class="major">Interactive Particle System with Physics</h2>
+							<h2 class="major">Interactive Particle System</h2>
 							<div id="particle-container" style="width: 100%; height: 400px;"></div>
-							<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 20px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
 						</article>
 						<!-- Work -->
 							<article id="OldProjects">
@@ -291,14 +290,17 @@
 		<!-- BG -->
 			<div id="bg"></div>
 
-		<!-- Scripts -->
-<!-- Scripts -->
+		<!-- Scripts --><!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/controls/OrbitControls.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/CannonDebugRenderer.min.js"></script>
 <script>
     // Initialize variables
     let scene, camera, renderer;
-    let particles = [];
-    let particleEmitter;
+    let glowingText, glowingTextPhysics;
+    let mouseX = 0, mouseY = 0;
 
     // Function to initialize the scene
     function init() {
@@ -306,64 +308,92 @@
         scene = new THREE.Scene();
 
         // Create camera
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-        camera.position.z = 1000;
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
 
         // Create renderer
         renderer = new THREE.WebGLRenderer();
-        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
+        renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
-        // Create particle emitter
-        particleEmitter = new THREE.Object3D();
-        scene.add(particleEmitter);
+        // Create glowing text
+        const loader = new THREE.FontLoader();
+        loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+            const textGeometry = new THREE.TextGeometry('Glowing Text', {
+                font: font,
+                size: 0.5,
+                height: 0.1,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.02,
+                bevelSegments: 5
+            });
+            const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            glowingText = new THREE.Mesh(textGeometry, textMaterial);
+            glowingText.position.set(0, 0, 0);
+            scene.add(glowingText);
 
-        // Add event listener for mouse movement
+            // Create physics object
+            const shape = new CANNON.Box(new CANNON.Vec3(0.25, 0.25, 0.05));
+            glowingTextPhysics = new CANNON.Body({
+                mass: 1,
+                position: new CANNON.Vec3(0, 0, 0),
+                shape: shape
+            });
+            glowingTextPhysics.angularDamping = 0.5;
+            glowingTextPhysics.linearDamping = 0.5;
+            glowingTextPhysics.allowSleep = true;
+            world.addBody(glowingTextPhysics);
+        });
+
+        // Add event listeners
         document.addEventListener('mousemove', onMouseMove, false);
-
-        // Create custom particles
-        const particleCount = 500;
-        for (let i = 0; i < particleCount; i++) {
-            const geometry = new THREE.BoxGeometry(10, 10, 10); // Custom geometry (e.g., cube)
-            const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
-            const particle = new THREE.Mesh(geometry, material);
-            particle.position.set(Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000);
-            particleEmitter.add(particle);
-            particles.push(particle);
-        }
+        window.addEventListener('resize', onWindowResize, false);
     }
 
     // Function to handle mouse movement
     function onMouseMove(event) {
-        // Update particle emitter position based on mouse movement
-        particleEmitter.position.x = (event.clientX / window.innerWidth) * 2000 - 1000;
-        particleEmitter.position.y = -(event.clientY / window.innerHeight) * 2000 + 1000;
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
     }
 
     // Function to animate the scene
     function animate() {
         requestAnimationFrame(animate);
         render();
+        updatePhysics();
     }
 
     // Function to render the scene
     function render() {
+        camera.position.x += (mouseX - camera.position.x) * 0.05;
+        camera.position.y += (-mouseY - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
         renderer.render(scene, camera);
     }
 
-    // Initialize and start animation
-    init();
-    animate();
+    // Function to update physics
+    function updatePhysics() {
+        // Update physics objects
+        glowingTextPhysics.position.copy(glowingText.position);
+        glowingTextPhysics.quaternion.copy(glowingText.quaternion);
 
-    // Resize renderer when window is resized
-    window.addEventListener('resize', onWindowResize, false);
+        // Apply force to physics object based on mouse position
+        const force = new CANNON.Vec3(mouseX, mouseY, 0);
+        glowingTextPhysics.applyForce(force, glowingTextPhysics.position);
+    }
 
     // Function to handle window resize
     function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
+        renderer.setSize(window.innerWidth, window.innerHeight);
     }
+
+    // Initialize and start animation
+    init();
+    animate();
 </script>
 		<!-- Include Three.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
