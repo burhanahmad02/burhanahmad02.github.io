@@ -97,7 +97,7 @@
 							<!-- Work -->
 							<article id="Projects">
 								<h2 class="major">Interactive Projects</h2>
-								<button id="showThreeJsScene">Show Three.js Scene</button> <!-- Button to show Three.js scene -->
+								<button id="showThreeJsScene">Show Three.js Scene</button> <!-- Button to show/hide Three.js scene -->
 								<div id="threeJsContainer"></div> <!-- Container for Three.js scene -->
 							</article>
 						<!-- Work -->
@@ -296,12 +296,22 @@
 		<!-- Include Three.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+    let scene, camera, renderer, cube, sphere, cubeText, sphereText; // Declare variables for scene components
+
     // Function to create and render Three.js scene
     function createThreeJsScene() {
+        // Check if scene is already initialized, if so, clear it
+        if (scene) {
+            scene.remove(cube);
+            scene.remove(sphere);
+            scene.remove(cubeText);
+            scene.remove(sphereText);
+        }
+
         // Set up Three.js scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
 
         // Append renderer's DOM element to container
@@ -309,13 +319,42 @@
         container.appendChild(renderer.domElement);
 
         // Create a cube geometry
-        const geometry = new THREE.BoxGeometry();
-        // Create a basic material
+        const geometryCube = new THREE.BoxGeometry();
+        // Create a sphere geometry
+        const geometrySphere = new THREE.SphereGeometry(1, 32, 32);
+
+        // Create materials
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        // Combine geometry and material to create a mesh (object)
-        const cube = new THREE.Mesh(geometry, material);
-        // Add cube to the scene
+
+        // Create cube and sphere meshes
+        cube = new THREE.Mesh(geometryCube, material);
+        sphere = new THREE.Mesh(geometrySphere, material);
+
+        // Set initial positions
+        cube.position.x = -2; // Position cube to the left
+        sphere.position.x = 2; // Position sphere to the right
+
+        // Add cube and sphere to the scene
         scene.add(cube);
+        scene.add(sphere);
+
+        // Create 3D text
+        const textGeometry = new THREE.TextGeometry('Burhan is updating the website', {
+            font: new THREE.FontLoader().load('fonts/helvetiker_regular.typeface.json'),
+            size: 0.2,
+            height: 0.1
+        });
+        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        cubeText = new THREE.Mesh(textGeometry, textMaterial);
+        sphereText = new THREE.Mesh(textGeometry, textMaterial);
+
+        // Position text
+        cubeText.position.set(-1, 0, 1);
+        sphereText.position.set(1, 0, 1);
+
+        // Add text to the scene
+        scene.add(cubeText);
+        scene.add(sphereText);
 
         // Position the camera
         camera.position.z = 5;
@@ -324,9 +363,11 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate the cube
+            // Rotate shapes
             cube.rotation.x += 0.01;
             cube.rotation.y += 0.01;
+            sphere.rotation.x += 0.01;
+            sphere.rotation.y += 0.01;
 
             // Render the scene
             renderer.render(scene, camera);
@@ -336,47 +377,30 @@
         animate();
     }
 
+    // Function to switch between shapes
+    function switchShapes() {
+        if (scene) {
+            // Swap positions of cube and sphere
+            scene.remove(cube);
+            scene.remove(sphere);
+            scene.remove(cubeText);
+            scene.remove(sphereText);
+            scene.add(sphere);
+            scene.add(cube);
+            scene.add(sphereText);
+            scene.add(cubeText);
+        }
+    }
+
     // Event listener for button click
     document.getElementById('showThreeJsScene').addEventListener('click', createThreeJsScene);
+
+    // Event listener for scene click to switch shapes
+    document.getElementById('threeJsContainer').addEventListener('click', switchShapes);
 </script>
 <!-- Create a canvas where Three.js will render -->
 <canvas id="threeCanvas"></canvas>
 
-<!-- Script to create the Three.js scene -->
-<script>
-    // Set up Three.js scene
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('threeCanvas') });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Create a cube geometry
-    const geometry = new THREE.BoxGeometry();
-    // Create a basic material
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    // Combine geometry and material to create a mesh (object)
-    const cube = new THREE.Mesh(geometry, material);
-    // Add cube to the scene
-    scene.add(cube);
-
-    // Position the camera
-    camera.position.z = 5;
-
-    // Function to animate the scene
-    function animate() {
-        requestAnimationFrame(animate);
-
-        // Rotate the cube
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;
-
-        // Render the scene
-        renderer.render(scene, camera);
-    }
-
-    // Start animation
-    animate();
-</script>
 
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/browser.min.js"></script>
