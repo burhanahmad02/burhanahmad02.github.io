@@ -95,7 +95,7 @@
 							</article>
 						<!-- Work -->
 						<article id="Projects" style="position: relative;">
-							<h2 class="major">Interactive Particle System</h2>
+							<h2 class="major">Interactive Particle System with Physics</h2>
 							<div id="particle-container" style="width: 100%; height: 400px;"></div>
 							<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 20px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
 						</article>
@@ -294,11 +294,12 @@
 		<!-- Scripts -->
 <!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ammo.js/2.0.0/ammo.wasm.js"></script>
 <script>
     // Initialize variables
     let scene, camera, renderer;
     let particles = [];
-    let particleEmitter;
+    let physicsWorld, physicsObjects = [];
 
     // Function to initialize the scene
     function init() {
@@ -314,12 +315,21 @@
         renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
-        // Create particle emitter
-        particleEmitter = new THREE.Object3D();
-        scene.add(particleEmitter);
+        // Create physics world
+        physicsWorld = new Ammo.btDiscreteDynamicsWorld(new Ammo.btCollisionDispatcher(), new Ammo.btDbvtBroadphase(), new Ammo.btSequentialImpulseConstraintSolver(), new Ammo.btDefaultCollisionConfiguration());
+        physicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0)); // Set gravity
 
-        // Add event listener for mouse movement
-        document.addEventListener('mousemove', onMouseMove, false);
+        // Create ground plane
+        const groundShape = new Ammo.btBoxShape(new Ammo.btVector3(100, 1, 100));
+        const groundTransform = new Ammo.btTransform();
+        groundTransform.setIdentity();
+        groundTransform.setOrigin(new Ammo.btVector3(0, -50, 0));
+        const groundMass = 0; // Static object
+        const groundLocalInertia = new Ammo.btVector3(0, 0, 0);
+        const groundMotionState = new Ammo.btDefaultMotionState(groundTransform);
+        const groundRigidBodyInfo = new Ammo.btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
+        const groundRigidBody = new Ammo.btRigidBody(groundRigidBodyInfo);
+        physicsWorld.addRigidBody(groundRigidBody);
 
         // Create custom particles
         const particleCount = 500;
@@ -328,27 +338,48 @@
             const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
             const particle = new THREE.Mesh(geometry, material);
             particle.position.set(Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000);
-            particleEmitter.add(particle);
+            scene.add(particle);
             particles.push(particle);
-        }
-    }
 
-    // Function to handle mouse movement
-    function onMouseMove(event) {
-        // Update particle emitter position based on mouse movement
-        particleEmitter.position.x = (event.clientX / window.innerWidth) * 2000 - 1000;
-        particleEmitter.position.y = -(event.clientY / window.innerHeight) * 2000 + 1000;
+            // Create rigid body
+            const rigidBodyShape = new Ammo.btBoxShape(new Ammo.btVector3(5, 5, 5));
+            const rigidBodyTransform = new Ammo.btTransform();
+            rigidBodyTransform.setIdentity();
+            rigidBodyTransform.setOrigin(new Ammo.btVector3(particle.position.x, particle.position.y, particle.position.z));
+            const rigidBodyMass = 1;
+            const localInertia = new Ammo.btVector3(0, 0, 0);
+            rigidBodyShape.calculateLocalInertia(rigidBodyMass, localInertia);
+            const rigidBodyMotionState = new Ammo.btDefaultMotionState(rigidBodyTransform);
+            const rigidBodyInfo = new Ammo.btRigidBodyConstructionInfo(rigidBodyMass, rigidBodyMotionState, rigidBodyShape, localInertia);
+            const rigidBody = new Ammo.btRigidBody(rigidBodyInfo);
+            physicsWorld.addRigidBody(rigidBody);
+            physicsObjects.push(rigidBody);
+        }
     }
 
     // Function to animate the scene
     function animate() {
         requestAnimationFrame(animate);
         render();
+        updatePhysics();
     }
 
     // Function to render the scene
     function render() {
         renderer.render(scene, camera);
+    }
+
+    // Function to update physics
+    function updatePhysics() {
+        physicsWorld.stepSimulation(1 / 60, 10); // Update physics simulation
+
+        // Update particle positions based on physics simulation
+        for (let i = 0; i < particles.length; i++) {
+            const transform = new Ammo.btTransform();
+            physicsObjects[i].getMotionState().getWorldTransform(transform);
+            const position = transform.getOrigin();
+            particles[i].position.set(position.x(), position.y(), position.z());
+        }
     }
 
     // Initialize and start animation
@@ -375,6 +406,7 @@
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/ammo.js/2.0.0/ammo.wasm.js"></script>
 
 			<script>
 			  var myVideo = document.getElementById('gif-video');
