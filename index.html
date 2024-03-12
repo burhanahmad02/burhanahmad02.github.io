@@ -298,8 +298,7 @@
     // Initialize variables
     let scene, camera, renderer;
     let particles = [];
-    let cursorTrail = [];
-    let smokeParticles = [];
+    let particleEmitter;
 
     // Function to initialize the scene
     function init() {
@@ -315,72 +314,30 @@
         renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
-        // Create particles
-        const particleCount = 1000;
-        const particleGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < particleCount * 3; i++) {
-            positions[i] = Math.random() * 2000 - 1000; // Random position
-        }
-        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff });
-        const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-        scene.add(particleSystem);
-        particles.push(particleSystem);
+        // Create particle emitter
+        particleEmitter = new THREE.Object3D();
+        scene.add(particleEmitter);
 
         // Add event listener for mouse movement
         document.addEventListener('mousemove', onMouseMove, false);
 
-        // Add event listener for mouse click
-        document.getElementById('particle-container').addEventListener('click', onMouseClick, false);
+        // Create custom particles
+        const particleCount = 500;
+        for (let i = 0; i < particleCount; i++) {
+            const geometry = new THREE.BoxGeometry(10, 10, 10); // Custom geometry (e.g., cube)
+            const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000);
+            particleEmitter.add(particle);
+            particles.push(particle);
+        }
     }
 
     // Function to handle mouse movement
     function onMouseMove(event) {
-        // Update particle positions based on mouse movement
-        const mouseX = event.clientX - window.innerWidth / 2;
-        const mouseY = event.clientY - window.innerHeight / 2;
-        for (let i = 0; i < particles.length; i++) {
-            particles[i].rotation.y += mouseX * 0.001;
-            particles[i].rotation.x += mouseY * 0.001;
-        }
-
-        // Create cursor trail
-        const cursorPosition = new THREE.Vector3(mouseX, -mouseY, 0);
-        cursorTrail.push(cursorPosition);
-        if (cursorTrail.length > 50) {
-            cursorTrail.shift();
-        }
-    }
-
-    // Function to handle mouse click
-    function onMouseClick(event) {
-        const mouseX = event.clientX - window.innerWidth / 2;
-        const mouseY = -(event.clientY - window.innerHeight / 2);
-
-        // Check if click is inside particle container
-        const container = document.getElementById('particle-container');
-        const containerRect = container.getBoundingClientRect();
-        if (event.clientX >= containerRect.left && event.clientX <= containerRect.right && event.clientY >= containerRect.top && event.clientY <= containerRect.bottom) {
-            // Create smoke particles
-            const smokeGeometry = new THREE.SphereGeometry(20, 32, 32);
-            const smokeMaterial = new THREE.MeshBasicMaterial({ color: getRandomColor(), transparent: true, opacity: 0.5 });
-            const smokeParticle = new THREE.Mesh(smokeGeometry, smokeMaterial);
-            smokeParticle.position.set(mouseX, mouseY, 0);
-            scene.add(smokeParticle);
-            smokeParticles.push(smokeParticle);
-
-            // Remove smoke particles after 1 second
-            setTimeout(() => {
-                scene.remove(smokeParticle);
-                smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
-            }, 1000);
-        }
-    }
-
-    // Function to generate random color
-    function getRandomColor() {
-        return Math.random() * 0xffffff;
+        // Update particle emitter position based on mouse movement
+        particleEmitter.position.x = (event.clientX / window.innerWidth) * 2000 - 1000;
+        particleEmitter.position.y = -(event.clientY / window.innerHeight) * 2000 + 1000;
     }
 
     // Function to animate the scene
@@ -392,15 +349,6 @@
     // Function to render the scene
     function render() {
         renderer.render(scene, camera);
-
-        // Draw cursor trail
-        const trailGeometry = new THREE.BufferGeometry().setFromPoints(cursorTrail);
-        const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 5 });
-        const trail = new THREE.Line(trailGeometry, trailMaterial);
-        scene.add(trail);
-        if (cursorTrail.length > 1) {
-            scene.remove(scene.children[scene.children.length - 1]);
-        }
     }
 
     // Initialize and start animation
