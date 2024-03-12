@@ -320,10 +320,10 @@
         document.getElementById('particle-container').appendChild(renderer.domElement);
 
         // Add event listener for mouse movement
-        document.addEventListener('mousemove', onMouseMove, false);
+        document.getElementById('particle-container').addEventListener('mousemove', onMouseMove, false);
 
         // Add event listener for mouse click
-        document.addEventListener('click', onMouseClick, false);
+        document.getElementById('particle-container').addEventListener('click', onMouseClick, false);
 
         // Start text movement animation
         moveText();
