@@ -332,7 +332,7 @@
         document.addEventListener('mousemove', onMouseMove, false);
 
         // Add event listener for mouse click
-        document.addEventListener('click', onMouseClick, false);
+        document.getElementById('particle-container').addEventListener('click', onMouseClick, false);
     }
 
     // Function to handle mouse movement
@@ -358,19 +358,24 @@
         const mouseX = event.clientX - window.innerWidth / 2;
         const mouseY = -(event.clientY - window.innerHeight / 2);
 
-        // Create smoke particles
-        const smokeGeometry = new THREE.SphereGeometry(10, 32, 32);
-        const smokeMaterial = new THREE.MeshBasicMaterial({ color: getRandomColor(), transparent: true, opacity: 0.5 });
-        const smokeParticle = new THREE.Mesh(smokeGeometry, smokeMaterial);
-        smokeParticle.position.set(mouseX, mouseY, 0);
-        scene.add(smokeParticle);
-        smokeParticles.push(smokeParticle);
+        // Check if click is inside particle container
+        const container = document.getElementById('particle-container');
+        const containerRect = container.getBoundingClientRect();
+        if (event.clientX >= containerRect.left && event.clientX <= containerRect.right && event.clientY >= containerRect.top && event.clientY <= containerRect.bottom) {
+            // Create smoke particles
+            const smokeGeometry = new THREE.SphereGeometry(20, 32, 32);
+            const smokeMaterial = new THREE.MeshBasicMaterial({ color: getRandomColor(), transparent: true, opacity: 0.5 });
+            const smokeParticle = new THREE.Mesh(smokeGeometry, smokeMaterial);
+            smokeParticle.position.set(mouseX, mouseY, 0);
+            scene.add(smokeParticle);
+            smokeParticles.push(smokeParticle);
 
-        // Remove smoke particles after 1 second
-        setTimeout(() => {
-            scene.remove(smokeParticle);
-            smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
-        }, 1000);
+            // Remove smoke particles after 1 second
+            setTimeout(() => {
+                scene.remove(smokeParticle);
+                smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
+            }, 1000);
+        }
     }
 
     // Function to generate random color
