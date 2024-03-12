@@ -97,8 +97,8 @@
 							<!-- Work -->
 							<article id="Projects" style="position: relative;">
 								<h2 class="major">Interactive Particle System</h2>
-								<div id="particle-container" style="width: 100%; height: 1000x;"></div>
-								<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 10px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
+								<div id="particle-container" style="width: 100%; height: 400px;"></div>
+								<div id="glowing-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #fff; text-align: center; text-shadow: 0 0 20px #fff;">Burhan is updating the website, meanwhile enjoy the interactive art here!</div>
 							</article>
 						<!-- Work -->
 							<article id="OldProjects">
@@ -300,6 +300,7 @@
     let scene, camera, renderer;
     let particles = [];
     let cursorTrail = [];
+    let smokeParticles = [];
 
     // Function to initialize the scene
     function init() {
@@ -330,6 +331,9 @@
 
         // Add event listener for mouse movement
         document.addEventListener('mousemove', onMouseMove, false);
+
+        // Add event listener for mouse click
+        document.addEventListener('click', onMouseClick, false);
     }
 
     // Function to handle mouse movement
@@ -348,6 +352,31 @@
         if (cursorTrail.length > 50) {
             cursorTrail.shift();
         }
+    }
+
+    // Function to handle mouse click
+    function onMouseClick(event) {
+        const mouseX = event.clientX - window.innerWidth / 2;
+        const mouseY = -(event.clientY - window.innerHeight / 2);
+
+        // Create smoke particles
+        const smokeGeometry = new THREE.SphereGeometry(10, 32, 32);
+        const smokeMaterial = new THREE.MeshBasicMaterial({ color: getRandomColor(), transparent: true, opacity: 0.5 });
+        const smokeParticle = new THREE.Mesh(smokeGeometry, smokeMaterial);
+        smokeParticle.position.set(mouseX, mouseY, 0);
+        scene.add(smokeParticle);
+        smokeParticles.push(smokeParticle);
+
+        // Remove smoke particles after 1 second
+        setTimeout(() => {
+            scene.remove(smokeParticle);
+            smokeParticles.splice(smokeParticles.indexOf(smokeParticle), 1);
+        }, 1000);
+    }
+
+    // Function to generate random color
+    function getRandomColor() {
+        return Math.random() * 0xffffff;
     }
 
     // Function to animate the scene
