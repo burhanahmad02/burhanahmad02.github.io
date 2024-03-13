@@ -117,9 +117,16 @@
 					
 							</article>
 						<!-- Work -->
-						<article id="Projects" style="position: relative;">
+						<!-- <article id="Projects" style="position: relative;">
 							<h2 class="major">Interactive Particle System</h2>
 							<div id="particle-container" style="width: 100%; height: 400px;"></div>
+							<div id="glowing-text-container">
+								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
+							</div>
+						</article> -->
+						<article id="Projects" style="position: relative;">
+							<h2 class="major">Interactive Particle System</h2>
+							<spline-viewer url="https://prod.spline.design/hZOFxUec9-uK9tKd/scene.splinecode" style="width: 100%; height: 400px;"></spline-viewer>
 							<div id="glowing-text-container">
 								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
 							</div>
@@ -401,6 +408,7 @@
 			<script src="assets/js/main.js"></script>
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/ammo.js/2.0.0/ammo.wasm.js"></script>
+			<script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.66/build/spline-viewer.js"></script>
 
 			<script>
 			  var myVideo = document.getElementById('gif-video');
