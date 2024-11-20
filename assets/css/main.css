@@ -32,6 +32,21 @@ footer, header, hgroup, menu, nav, section {
 body {
 	line-height: 1;
 }
+/* General video styling */
+video {
+    display: block;             /* Makes the video a block element */
+    margin: 0 auto;             /* Centers the video horizontally */
+    max-width: 100%;            /* Ensures video width doesn't exceed container */
+    height: auto;               /* Maintains aspect ratio */
+}
+
+/* Media Query for mobile screens */
+@media (max-width: 767px) {
+    video {
+        width: 100%;            /* Make video fill the container on smaller screens */
+        height: auto;           /* Keep aspect ratio intact */
+    }
+}
 
 ol, ul {
 	list-style: none;
@@ -1387,6 +1402,18 @@ input, select, textarea {
 				font-size: 0.8rem;
 				line-height: 2;
 			}
+			#closeButton {
+				background: none;
+				border: none;
+				color: #000;
+				font-size: 24px;
+				font-weight: bold;
+				cursor: pointer;
+			}
+			#closeButton:hover {
+				color: red;
+			}
+			
 
 		#header nav ul {
 			display: -moz-flex;
@@ -1712,21 +1739,3 @@ input, select, textarea {
 		body.is-preload #footer {
 			opacity: 0;
 		}
-
-
-		.gif-video {
-			width: 100%;
-			height: 100%;
-		}
-		
-		@media screen and (min-width: 312px) and (max-width: 768px) {
-			.gif-video {
-				width: 100%;
-				height: 100%;
-			}
-			#Projects{
-				width: 343px;
-				height: 100%;
-			}
-		}
-		
