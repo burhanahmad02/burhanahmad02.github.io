@@ -1173,7 +1173,10 @@ input, select, textarea {
 	}
 
 /* BG */
-
+#runtimeText {
+    font-size: 18px; /* Adjust font size as needed */
+    text-align: center;
+}
 	#bg {
 		-moz-transform: scale(1.0);
 		-webkit-transform: scale(1.0);
