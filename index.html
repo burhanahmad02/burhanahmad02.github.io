@@ -113,7 +113,7 @@
 							<article id="intro">
 								<h2 class="major">Welcome to my Game World!</h2>
 								<span class="image main"><img src="images/burhan.jpeg" style="width:60%; height:80%; margin-left: auto; margin-right: auto" alt="" /></span>
-								<p>Hello! I'm Burhan Ahmad, a game artist, currently living in Dubai, UAE.</p>
+								<p>Hello! I'm Burhan Ahmad, a Game Developer, currently living in Dubai, UAE.</p>
 								<p>I'm passionate about creating immersive experiences that are entertaining and visually stunning. I love taking on new challenges and learning about new technologies in the game development world.</p>
 								<p>Explore my website and see what kind of games, interactive mechanisms and immersive experiences I've worked on so far. Who knows, maybe we'll collaborate on a something amazing together someday!</p>
 					
@@ -141,7 +141,16 @@
 								</p>
 								<div class="row">
 									<div class="video-container" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/hugoboss.mp4" alt="" width="560" height="315"></video>
+										<video id="gif-video" autoplay loop muted playsinline 
+										src="images/hugoboss.mp4" 
+										alt="" 
+										width="560" 
+										height="315">
+										Your browser does not support the video tag.
+									</video>
+									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
+										Incompatible browser, use browser on PC.
+									</div>
 										<p id="runtimeText">Runtime demonstration in Dubai Mall.</p>
 									</div>
 								</div>
@@ -438,8 +447,10 @@
 										<p id="runtimeText">Designed and implemented a shooting range so the player can practice their shooting skills.</p>
 									</div>
 								</div>	
+								<div style="display: flex; justify-content: center;">
 								<iframe width="560" height="315" src="https://www.youtube.com/embed/oAFewww7YdI" frameborder="0" allowfullscreen></iframe>
-									<p id="runtimeText">Gameplay.</p>
+							</div>
+								<p id="runtimeText">Gameplay.</p>
 								<p>
 									<a href="" target="_blank">Not Uploaded Yet!</a>
 								</p>
@@ -448,7 +459,9 @@
 								<p>
 									An offiline Sniper-first person shooter with proper first person control and limited movement in which the player can choose different weapons and has to shoot the correct target in order to progress through the game.
 								</p>
+								<div style="display: flex; justify-content: center;">
 									<iframe width="560" height="315" src="https://www.youtube.com/embed/CQ6QVn-YW3I" frameborder="0" allowfullscreen></iframe>
+								</div>
 									<p id="runtimeText">Gameplay.</p>
 								<p>
 									<a href="" target="_blank">Not Uploaded Yet!</a>
@@ -472,7 +485,9 @@
 										<p id="runtimeText">Showcasing the water mechanics (made using shader), and fishes made using boids (the fish culture moves randomly).</p>
 									</div>
 								</div>	
+								<div style="display: flex; justify-content: center;">
 								<iframe width="560" height="315" src="https://www.youtube.com/embed/K3lzeVXhE5g" frameborder="0" allowfullscreen></iframe>
+								</div>
 								<p>FiveOcean gameplay.</p>
 								<p>
 									<a href="https://github.com/burhanahmad02/FiveOcean" target="_blank">Git</a>
@@ -486,7 +501,9 @@
 										<video id="gif-video" autoplay loop muted playsinline src="images/carpath.mp4" alt="" width="560" height="315"></video>
 										<p id="runtimeText">Player can draw path for the car to reach the end point.</p>
 								</div>
+								<div style="display: flex; justify-content: center;">
 								<iframe width="560" height="315" src="https://www.youtube.com/embed/HNl7Xe6BQS4" frameborder="0" allowfullscreen></iframe>
+								</div>
 								<p id="runtimeText">Car Path Draw gameplay.</p>
 								<p>
 									<a href="https://github.com/burhanahmad02/CarPathDraw" target="_blank">Git</a>
