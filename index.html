@@ -699,6 +699,21 @@
         color: #FF5733;  /* Change color when hovered */
     }
 </style>
+<script>
+    const video = document.getElementById("gif-video");
+    const fallbackMessage = document.getElementById("fallback-message");
+
+    // Check if the video has any errors during loading
+    video.addEventListener("error", () => {
+        fallbackMessage.style.display = "block"; // Show the fallback message
+        video.style.display = "none";           // Hide the video element
+    });
+
+    // Alternatively, you can check if the video can play
+    video.addEventListener("canplay", () => {
+        fallbackMessage.style.display = "none"; // Hide the fallback message
+    });
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
     // Initialize variables
