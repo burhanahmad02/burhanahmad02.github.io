@@ -1712,3 +1712,21 @@ input, select, textarea {
 		body.is-preload #footer {
 			opacity: 0;
 		}
+
+
+		.gif-video {
+			width: 100%;
+			height: 100%;
+		}
+		
+		@media screen and (min-width: 312px) and (max-width: 768px) {
+			.gif-video {
+				width: 100%;
+				height: 100%;
+			}
+			#Projects{
+				width: 343px;
+				height: 100%;
+			}
+		}
+		
