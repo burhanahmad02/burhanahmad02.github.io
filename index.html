@@ -44,7 +44,25 @@
 }
 
 </style>
-
+<style>
+	ul {
+		list-style-type: none;
+		padding: 0;
+	}
+	li {
+		background-color: #575757;
+		padding: 10px;
+		margin: 5px 0;
+		color: white;
+		font-size: 18px;
+		border-radius: 4px;
+		transition: transform 0.3s ease, background-color 0.3s ease;
+	}
+	li:hover {
+		transform: scale(1.1);
+		background-color: #45a049;
+	}
+</style>
 <html>
 	<head>
 		<title>Burhan Ahmad</title>
@@ -60,7 +78,19 @@
 
 	
 	<body class="is-preload">
+		
+		<div id="followElement"></div>
 
+		<script>
+			const followElement = document.getElementById('followElement');
+			
+			document.addEventListener('mousemove', (event) => {
+				const mouseX = event.clientX;
+				const mouseY = event.clientY;
+				
+				followElement.style.transform = `translate3d(${mouseX - 25}px, ${mouseY - 25}px, 0)`;
+			});
+		</script>
 		<!-- Wrapper -->
 			<div id="wrapper">
 
@@ -714,6 +744,23 @@
         fallbackMessage.style.display = "none"; // Hide the fallback message
     });
 </script>
+<style>
+	body {
+		height: 100vh;
+		margin: 0;
+		overflow: hidden;
+		background-color: #f0f0f0;
+	}
+	#followElement {
+		position: absolute;
+		width: 50px;
+		height: 50px;
+		background-color: #FF5733;
+		border-radius: 50%;
+		pointer-events: none; /* This makes sure the element doesn't block other interactions */
+		transition: transform 0.1s ease;
+	}
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
     // Initialize variables
