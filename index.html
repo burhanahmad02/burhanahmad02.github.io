@@ -654,7 +654,7 @@
 					<h2 class="major">Contact</h2>
 					<p>Got a project, installation, or XR build in mind? Drop me a line. I'd love to hear about it.</p>
 					<p>Or you can reach out via phone: <a href="tel:+971521566568">+971 52 156 6568</a>.</p>
-					<form method="POST" action="https://formsubmit.co/muhdburh@gmail.com">
+					<form id="contact-form" method="POST" action="https://formsubmit.co/muhdburh@gmail.com">
 						<input type="hidden" name="_subject" value="New message from your portfolio" />
 						<input type="hidden" name="_captcha" value="false" />
 						<input type="hidden" name="_template" value="table" />
@@ -678,6 +678,12 @@
 							<li><input type="reset" value="Reset" /></li>
 						</ul>
 					</form>
+					<div id="contact-success" style="display:none; padding:1em; background:rgba(69,160,73,0.15); border-left:3px solid #45a049; border-radius:4px; margin-top:1em;">
+						<p style="margin:0">Thanks for reaching out! Your message has been sent and I'll get back to you soon.</p>
+					</div>
+					<div id="contact-error" style="display:none; padding:1em; background:rgba(255,107,107,0.15); border-left:3px solid #ff6b6b; border-radius:4px; margin-top:1em;">
+						<p style="margin:0">Something went wrong sending your message. Please try again, or email me directly at <a href="mailto:muhdburh@gmail.com">muhdburh@gmail.com</a>.</p>
+					</div>
 					<ul class="icons">
 						<li><a href="mailto:muhdburh@gmail.com" class="icon solid fa-envelope" aria-label="Email"><span class="label">Email</span></a></li>
 						<li><a href="tel:+971521566568" class="icon solid fa-phone" aria-label="Phone"><span class="label">Phone</span></a></li>
@@ -715,6 +721,51 @@
 					}
 				});
 			});
+
+			// Submit contact form via AJAX so user stays on the page.
+			(function () {
+				var form = document.getElementById('contact-form');
+				if (!form) return;
+				form.addEventListener('submit', function (e) {
+					e.preventDefault();
+					var submitBtn = form.querySelector('input[type="submit"]');
+					var successBox = document.getElementById('contact-success');
+					var errorBox = document.getElementById('contact-error');
+					var originalLabel = submitBtn.value;
+
+					successBox.style.display = 'none';
+					errorBox.style.display = 'none';
+					submitBtn.value = 'Sending...';
+					submitBtn.disabled = true;
+
+					var formData = new FormData(form);
+					var payload = {};
+					formData.forEach(function (value, key) { payload[key] = value; });
+
+					fetch('https://formsubmit.co/ajax/muhdburh@gmail.com', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json'
+						},
+						body: JSON.stringify(payload)
+					})
+					.then(function (res) { return res.json(); })
+					.then(function (data) {
+						if (data && (data.success === 'true' || data.success === true)) {
+							form.style.display = 'none';
+							successBox.style.display = 'block';
+						} else {
+							throw new Error('Submission rejected');
+						}
+					})
+					.catch(function () {
+						errorBox.style.display = 'block';
+						submitBtn.value = originalLabel;
+						submitBtn.disabled = false;
+					});
+				});
+			})();
 		</script>
 
 	</body>
