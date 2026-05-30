@@ -1,827 +1,732 @@
-﻿cme<!DOCTYPE<!DOCTYPE HTML>
+<!DOCTYPE HTML>
 <!--
 	Dimension by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 -->
-<style>
-    img.mg {
-		display: block;
-    margin: 0 auto;
-    height: 100%;
-    width: 100%; 
-    margin: 0 0 0 -20%;
-    -webkit-border-radius: 50%;
-    -moz-border-radius: 50%;
-    -ms-border-radius: 50%;
-    -o-border-radius: 50%;
-    border-radius: 50%;  
-	position: absolute;
- left:18px;
- transform: scale(0.95, 0.95);
- 
-    }
-	#glowing-text-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1; /* Ensure the text appears above other elements */
-    pointer-events: none; /* Make the text non-selectable */
-}
-
-#glowing-text {
-    font-size: 24px;
-    color: #fff;
-    text-align: center;
-    text-shadow: 0 0 20px #fff;
-    opacity: 0.7; /* Set initial opacity */
-    transition: opacity 0.3s ease-in-out; /* Add transition effect */
-}
-
-#glowing-text:hover {
-    opacity: 1; /* Increase opacity on hover */
-}
-
-</style>
-
-<html>
+<html lang="en">
 	<head>
-		<title>Burhan Ahmad</title>
 		<meta charset="utf-8" />
-		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://medium.com">
+		<title>Burhan Ahmad — Unity &amp; XR Developer, Dubai</title>
+		<meta name="description" content="Unity &amp; XR Developer with 5+ years building VR, MR, AR experiences and interactive installations for global brands. Based in Dubai." />
+		<meta name="author" content="Burhan Ahmad" />
+		<meta name="theme-color" content="#1b1f22" />
+
+		<!-- Open Graph -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Burhan Ahmad — Unity &amp; XR Developer" />
+		<meta property="og:description" content="Unity &amp; XR Developer building immersive VR, MR, and AR experiences and interactive installations for global brands." />
+		<meta property="og:image" content="https://burhanahmad02.github.io/images/burhan.jpg" />
+		<meta property="og:url" content="https://burhanahmad02.github.io/" />
+
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Burhan Ahmad — Unity &amp; XR Developer" />
+		<meta name="twitter:description" content="Building immersive VR/MR/AR experiences and interactive installations for global brands." />
+		<meta name="twitter:image" content="https://burhanahmad02.github.io/images/burhan.jpg" />
+
+		<meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://medium.com" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-		<link rel="shortcut icon" type="image/ico" href="images/burhann.ico"/>
+		<link rel="shortcut icon" type="image/ico" href="images/burhann.ico" />
+
 		<style>
-			ul {
+			img.mg {
+				display: block;
+				margin: 0 auto;
+				height: 100%;
+				width: 100%;
+				margin: 0 0 0 -20%;
+				border-radius: 50%;
+				position: absolute;
+				left: 18px;
+				transform: scale(0.95, 0.95);
+			}
+
+			/* Skill chips */
+			.skill-list {
 				list-style-type: none;
 				padding: 0;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-bottom: 1.5em;
 			}
-			li {
+			.skill-list li {
 				background-color: #4f4f4f;
-				padding: 5px;
-				margin: 5px 0;
+				padding: 6px 12px;
+				margin: 0;
 				color: white;
-				font-size: 18px;
+				font-size: 15px;
 				border-radius: 4px;
-				transition: transform 0.3s ease, background-color 0.3s ease;
+				transition: transform 0.25s ease, background-color 0.25s ease;
 			}
-			li:hover {
-				transform: scale(1.1);
+			.skill-list li:hover {
+				transform: scale(1.08);
 				background-color: #45a049;
+			}
+
+			/* Experience timeline */
+			.experience-item {
+				margin-bottom: 1.75em;
+				padding-left: 1em;
+				border-left: 2px solid rgba(255, 255, 255, 0.2);
+			}
+			.experience-item h3 {
+				margin-bottom: 0.2em;
+			}
+			.experience-meta {
+				color: rgba(255, 255, 255, 0.55);
+				font-size: 0.85em;
+				margin-bottom: 0.6em;
+				display: block;
+			}
+			.experience-item ul {
+				padding-left: 1.1em;
+				margin-bottom: 0;
+			}
+			.experience-item ul li {
+				background: transparent;
+				color: inherit;
+				padding: 2px 0;
+				margin: 0;
+				font-size: inherit;
+				border-radius: 0;
+				list-style-type: disc;
+				transition: none;
+			}
+			.experience-item ul li:hover {
+				transform: none;
+				background: transparent;
+			}
+
+			/* Scaled CTA link */
+			.scaled-link {
+				font-size: 18px;
+				color: #fcfcfc;
+				text-decoration: none;
+				display: inline-block;
+				animation: scale-up-down 2s infinite;
+			}
+			@keyframes scale-up-down {
+				0%   { transform: scale(1) translateY(0); }
+				50%  { transform: scale(1.2) translateY(-5px); }
+				100% { transform: scale(1) translateY(0); }
+			}
+			.scaled-link:hover { color: #FF5733; }
+
+			.fallback-message {
+				display: none;
+				color: #ff6b6b;
+				font-weight: bold;
 			}
 		</style>
 	</head>
 
-	
 	<body class="is-preload">
 
 		<!-- Wrapper -->
-			<div id="wrapper">
+		<div id="wrapper">
 
-				<!-- Header -->
-					<header id="header">
-						<div class="logo">
-							<img class="mg" src="images/patatadance.gif" alt="" />
-							<span class="image main">
-							</span>
+			<!-- Header -->
+			<header id="header">
+				<div class="logo">
+					<img class="mg" src="images/patatadance.gif" alt="" />
+					<span class="image main"></span>
+				</div>
+				<div class="content">
+					<div class="inner">
+						<h1>Burhan Ahmad</h1>
+						<p>Unity &amp; XR Developer based in Dubai.<br />
+							5+ years building VR, MR, and AR experiences and interactive installations for global brands.</p>
+						<div class="social-icons">
+							<a href="https://www.linkedin.com/in/burhan066/" target="_blank" rel="noopener" aria-label="LinkedIn">
+								<i class="fab fa-linkedin"></i>
+								<span class="icon-name">LinkedIn</span>
+							</a>
+							<a href="https://medium.com/@muhdburh" target="_blank" rel="noopener" aria-label="Medium">
+								<i class="fab fa-medium"></i>
+								<span class="icon-name">Medium</span>
+							</a>
+							<a href="https://github.com/burhanahmad02" target="_blank" rel="noopener" aria-label="GitHub">
+								<i class="fab fa-github"></i>
+								<span class="icon-name">GitHub</span>
+							</a>
 						</div>
-						<div class="content">
-							<div class="inner">
-								<h1>Your Next Interactive Experience</h1>
-								<p>Immersive tech enthusiast and storyteller, currently in Dubai.<br />
-									Crafting experiences that connect people in novel ways. I enjoy making experiences that bring joy and enthusiasm, fostering a love for learning new experiences</p>
-								<div class="social-icons">
-								  <a href="https://www.linkedin.com/in/burhan066/" target="_blank">
-									<i class="fab fa-linkedin"></i>
-									<span class="icon-name">LinkedIn</span>
-								  </a>
-								  <a href="https://medium.com/@muhdburh" target="_blank">
-									<i class="fab fa-medium"></i>
-									<span class="icon-name">Medium</span>
-								  </a>
-								  <a href="https://github.com/burhanahmad02" target="_blank">
-									<i class="fab fa-github"></i>
-									<span class="icon-name">GitHub</span>
-								  </a>
-								</div>
-							</div>
-						</div>
-						<nav>
-							<ul>
-								<li><a href="#intro">Intro</a></li>
-								<li><a href="#Projects">Interactive Projects</a></li>
-								<li><a href="#AR">AR</a></li>
-								<li><a href="#VR">VR</a></li>
-								<li><a href="#OldProjects">Game Development</a></li>
-								<li><a href="Resume - Burhan Ahmad.pdf" target="_blank">Resume</a></li>
-								<li><a href="#Articles">Articles</a></li>
-								<!--<li><a href="#elements">Elements</a></li>-->
-							</ul>
-						</nav>
-					</header>
+					</div>
+				</div>
+				<nav>
+					<ul>
+						<li><a href="#intro">About</a></li>
+						<li><a href="#experience">Experience</a></li>
+						<li><a href="#stack">Tech Stack</a></li>
+						<li><a href="#Projects">Interactive</a></li>
+						<li><a href="#AR">AR</a></li>
+						<li><a href="#VR">VR</a></li>
+						<li><a href="#OldProjects">Games</a></li>
+						<li><a href="#Articles">Articles</a></li>
+						<li><a href="#contact">Contact</a></li>
+						<li><a href="Resume - Burhan Ahmad.pdf" target="_blank" rel="noopener">Resume</a></li>
+					</ul>
+				</nav>
+			</header>
 
-				<!-- Main -->
-					<div id="main">
+			<!-- Main -->
+			<div id="main">
 
-						<!-- Intro -->
-							<article id="intro">
-								<h2 class="major">Welcome to my Game World!</h2>
-								<span class="image main"><img src="images/burhan.jpg" style="width:60%; height:80%; margin-left: auto; margin-right: auto" alt="" /></span>
-								<p>Hello! I'm Burhan Ahmad, a Game Developer, currently living in Dubai, UAE.</p>
-								<p>I'm passionate about creating immersive experiences that are entertaining and visually stunning. I love taking on new challenges and learning about new technologies in the game development world.</p>
-								<p>Explore my website and see what kind of games, interactive mechanisms and immersive experiences I've worked on so far. Who knows, maybe we'll collaborate on a something amazing together someday!</p>
-					
-							</article>
-						<!-- Work -->
-						<!-- <article id="Projects" style="position: relative;">
-							<h2 class="major">Interactive Particle System</h2>
-							<div id="particle-container" style="width: 100%; height: 400px;"></div>
-							<div id="glowing-text-container">
-								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
-							</div>
-						</article> -->
-						<article id="Projects" style="position: relative;">
-							<!-- <h2 class="major">Interactive Experiences</h2>
-							
-							<spline-viewer url="https://prod.spline.design/hZOFxUec9-uK9tKd/scene.splinecode"></spline-viewer>
-							<div id="glowing-text-container">
-								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
-							</div> -->
-							<h2 class="major">HugoBoss Interactive Shadows</h2>
-								<!-- <span class="image main"><img src="images/hugoboss.gif" alt="" /></span> -->
-								<p>
-									Interactive installation for luxury brand in which I collaborated with a team member at BriteMinds to create a custom human detection model, I used 
-									data from this detection model in unity to create immersive experience using, vfx, shaders and keyframe animations.
-								</p>
-								<div class="row">
-									<div class="video-container" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline 
-										src="images/hugoboss.mp4" 
-										alt="" 
-										width="560" 
-										height="315">
-										Your browser does not support the video tag.
-									</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-										<p id="runtimeText">Runtime demonstration in Dubai Mall.</p>
-									</div>
-								</div>
-							<h2 class="major">Luminous Interactive Floor</h2>
-							<span class="image main"><img src="images/lusail.jpg" alt="" /></span>
-							<p>
-								Interactive installation for a lights festival in Qatar in which I collaborated with a reknowned artist <b><a href="https://georgiepinn.com" target="_blank">Georgie Pinn</a></b>  who is known for her
-								interactive and innovative installations in Brisbane and a fellow Unity Developer <b>Nathan Clarkson</b> to create a custom particle effects each
-								showcasing the fireworks harmony seamlessly handling 10-15 visitors at once.
-							</p>
-							<div class="row">
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/lusail.mp4" alt="" width="560" height="315" >Your browser does not support the video tag.</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-									<p id="runtimeText">Runtime demonstration in Lusail Festival in Doha, Qatar.</p>
-								</div>
-							</div>
-							<h2 class="major">Qadsiah Festival Floor</h2>
-							<p>
-								Interactive installation for a festival in Saudi Arabia in which we created a custom air-hockey game showcasing vfx and particles.
-							</p>
-							<div class="row">
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/Qadsiah.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-									<p id="runtimeText">Runtime demonstration in Qadsiah Festival in Riyadh, Saudi Arabia.</p>
-								</div>
-							</div>
-							<h2 class="major">Loewe Interactive floor</h2>
-								<!-- <span class="image main"><img src="images/loewe.gif" alt="" /></span> -->
-								<p>
-									Interactive installation for luxury brand in which I collaborated with a reknowned artist <b>Seph Li</b> who is known for his 
-									interactive art work in ink to create a custom particle effects each showcasing the nature of water (ripples, magnetic field, vortex), 
-									seamlessly handling 10-15 visitors at once.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/Loewe.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration in Dubai Mall.</p>
-									</div>
-								</div>
-							
-							
-							<h2 class="major">Custom Interactive Projects</h2>
-							<p>
-								Particles and VFX have always captivated me, especially when integrated into interactive installations like projection 
-								mapping, interactive floors, or webcam-controlled experiences. The ability to craft and control dynamic visuals adds 
-								an exciting layer of creativity and innovation. Here are a few projects where I honed my skills in Unity 3D and TouchDesigner.
-								<b>A custom menu can be developed for any of the projects I am working on to manipulate particle size, speed and behaviour.</b>
-							</p>
-							<div class="row">
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/custom1.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<p id="runtimeText">Custom vfx generative particles.</p>
-								</div>
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/custom2.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<p id="runtimeText">Runtime demonstration on the floor.</p>
-								</div>
-							</div>
-							<div class="row">
-								<div class="column" style="flex-direction: column;">
-									<video id="gif-video" autoplay loop muted playsinline src="images/customgridgame.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-									<p id="runtimeText">Runtime demonstration on the floor.</p>
-									<!-- Add Button Below -->
-									<!-- <button href="#howIMade" style="margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer;">
-										How I Made
-									</button> -->
-									<a href="#howIMade" class="scaled-link">How I Made</a>
-								 
-								</div>
-							</div>
-							<h2 class="major">Tangible Screen Projects</h2>
-							<p>
-								
-								While working on tangible screen projects, I developed custom programs to calculate the angles between 
-								the support points on each puck. This mathematical approach allowed me to differentiate between 
-								individual pucks and assign specific objects to them within the applications.
-							</p>
-							<div class="row">
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/tangible.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-									<p id="runtimeText">Custom software for creating tangible screen effect without any object recognition.</p>
-								</div>
-							</div>
-							<div class="row">
-								<div class="column" flex-direction: column;>
-									<video id="gif-video" autoplay loop muted playsinline src="images/tabgible.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-									<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-										Incompatible browser, use on a different Device.
-									</div>
-									<p id="runtimeText">Demonstration video.</p>
-								</div>
-							</div>
-						</article>
-						<!-- Article Section (Initially Hidden) -->
-						<!-- "How I Made" Section (Initially Hidden) -->
-						<article id="howIMade"style="position: relative;">
-							<!-- <button id="closeButton" style="position: absolute; top: 10px; right: 10px; cursor: pointer; font-size: 16px;">✖</button> -->
-							
-							<h2 class="major">How I made:</h2>
-							<div class="column" style="flex-direction: column;">
-								<video id="gif-video" autoplay loop muted playsinline src="images/customgridinteractivefloor.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-								<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-									Incompatible browser, use on a different Device.
-								</div>
-								<p id="runtimeText">Custom Grid logic which is generated at runtime according to the </p>
-							</div>
-							<div class="column" style="flex-direction: column;">
-								<video id="gif-video" autoplay loop muted playsinline src="images/customgrid.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-								<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-									Incompatible browser, use on a different Device.
-								</div>
-								<p id="runtimeText">Game Logic based for the Floor game.</p>
-							</div>
-						</article>
+				<!-- Intro -->
+				<article id="intro">
+					<h2 class="major">About</h2>
+					<span class="image main"><img src="images/burhan.jpg" style="width:60%; height:80%; margin-left: auto; margin-right: auto" alt="Burhan Ahmad" /></span>
+					<p>Hello! I'm Burhan Ahmad, a <b>Unity &amp; XR Developer</b> based in Dubai, UAE, with 5+ years of experience building games, XR applications, and interactive installations for global brands and studios.</p>
+					<p>I specialize in VR, MR, and AR development using Unity and C#, with hands-on experience integrating sensors, computer vision systems, and hardware devices — Meta Quest, Xreal glasses, Leap Motion, Hokuyo LiDAR, Arduino — to create immersive real-time experiences.</p>
+					<p>I love taking on new challenges and learning new technologies. Explore my work below, and if any of it sparks ideas for a collaboration, <a href="#contact">get in touch</a>.</p>
+				</article>
 
+				<!-- Experience -->
+				<article id="experience">
+					<h2 class="major">Experience</h2>
 
-						<article id="AR" style="position: relative;">
-							<!-- <h2 class="major">Interactive Experiences</h2>
-							
-							<spline-viewer url="https://prod.spline.design/hZOFxUec9-uK9tKd/scene.splinecode"></spline-viewer>
-							<div id="glowing-text-container">
-								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
-							</div> -->
-							<h2 class="major">AR Try-On</h2>
-								<p>
-									Utilized media-pipe face tracking to get landmark of eyes and nose and set 3d glasses model size according
-									to the size of each person so they fit perfectly. Moreover added functionality to take pictures and send emails, 
-									for this I used <b>node.js</b> to create a custom program that receives pictures as bytes from unity and then converts
-									those bytes into pictures and then sends via email.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/AR-TryOn.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<h2 class="major">AR particle control</h2>
-								<p>
-									Utilized and modified a cursor control python library to control particles based on cursor movement in touch designer. The particles
-									style was inspired from Dragon Ball Super, Goku Ultra instinct animation.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/UltraInstinct.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/orb vfx.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Created a orb shaped vfx that can be controlled by manipulating size, emissions, strength and colors.</p>
-										
-									</div>
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/orbvfxanim.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">More control over the effect and environment.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/ARBoids.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Vfx for generating fishes and move them around in boids, once the hand is detected the stop moving randomly and follow the hand movements.
-										</p>
-										
-									</div>
-								</div>
-								<h2 class="major">Camera control</h2>
-								<p>
-									Used mediapipe to create a custom head tracking software based on which the camera inside unity focuses on a certain point and moves around it
-									replicating the forced perspective behaviour.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/MixedAR.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<h2 class="major">Camera control</h2>
-								<p>
-									Used mediapipe to create a custom head tracking software based on which the camera inside unity rotate, when incorporated with custom projects
-									like Roller coaster it gives a illusion as if the person is actually sitting on the roller coaster ride and enjoying the scenic views.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/Rollercoaster.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/TouchDesigner.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/TouchDesignernew.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-						</article>
-						<article id="VR" style="position: relative;">
-							<!-- <h2 class="major">Interactive Experiences</h2>
-							
-							<spline-viewer url="https://prod.spline.design/hZOFxUec9-uK9tKd/scene.splinecode"></spline-viewer>
-							<div id="glowing-text-container">
-								<div id="glowing-text">Section under construction, meanwhile enjoy the interactive art here!</div>
-							</div> -->
-							<h2 class="major">VR Learning</h2>
-								<p>
-									Modified the Demo Scene provided by unity learn for VR and added some new interactions for displaying
-									and controlling the 3d model of train.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/train.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<h2 class="major">Infinite Zoom</h2>
-								<p>
-									Tried replicating the infinite picture zoom effect but instead of using pictures I used 3d models and created
-									custom sshader effect to replicate the same effect.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										-- <video id="gif-video" autoplay loop muted playsinline src="images/infinitezoom.mp4" alt="" width="560" height="315"></video> 
-										<!-- <p id="runtimeText">Video Not Available at the moment.</p> -->
-									</div>
-								</div>
-								<h2 class="major">Object Grab</h2>
-								<p>
-									Used the same objects used in infite zoom project and created the functionality of object grab and rotate to controller movement.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										 <video id="gif-video" autoplay loop muted playsinline src="images/Grab.mp4" alt="" width="560" height="315"></video> 
-										<!-- <p id="runtimeText">Video Not Available at the moment.</p> -->
-									</div>
-								</div>
-						</article>
-						<!-- Work -->
-							<article id="OldProjects">
-								<h2 class="major">Custom car controller</h2>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/cargame.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Runtime demonstration.</p>
-									</div>
-								</div>
-								<h2 class="major">Rush To Crush</h2>
-								<span class="image main"><img src="images/rush2crush.jpg" alt="" /></span>
-								<p>
-									Bike game with thrilling tracks packed with bike stunt game missions and extreme bike races.
-								</p>
-								<p>
-									<a href="https://play.google.com/store/apps/details?id=com.ghive.endless.car.race.traffic.drive.apps" target="_blank">Download</a>
-								</p>
-								<h2 class="major">Fps Fire Battle Royal Survival</h2>
-								<span class="image main"><img src="images/fps.jpg" alt="" /></span>
-								<p>
-									An offiline first person shooter with proper first person control and movement in which the player can choose different weapons and earn rewards as the level progresses.
-								</p>
-								<p>
-									<a href="https://play.google.com/store/apps/details?id=com.GameEver.FPSCommandoWar&hl=en&gl=US" target="_blank">Download</a>
-								</p>
-								<h2 class="major">Fashion Makeover</h2>
-								<span class="image main"><img src="images/makeover.png" alt="" /></span>
-								<p>
-									Fashion makeover game that allows players to design a unique dressing style and enhance their fashion sense through beauty makeup.
-								</p>
-								<p>
-									<a href="https://play.google.com/store/apps/details?id=com.sg.fashion.makeover.dressup.game&hl=en_US&gl=US" target="_blank">Download</a>
-								</p>
-								<h2 class="major">Santa Pin-Pull</h2>
-								<span class="image main"><img src="images/santa-pinpull.jpg" alt="" width="50" /></span>
-								<p>
-									A puzzle game made with unity and c# in which the player has to unlock the pins to pave the way for the santa to reach the kid and handout the gifts.
-								</p>
-								<p>
-									<a href="https://play.google.com/store/apps/details?id=com.santa.gift.pinpull.free.games&hl=en&gl=US" target="_blank">Download</a>
-								</p>
-								<h2 class="major">Fps Scifi Shooter</h2>
-								<span class="image main"><img src="images/icon.png" alt="" /></span>
-								<p>
-									An offiline Scifi-first person shooter with proper first person control and movement in which the player can choose different weapons and the enemies get stronger as the level progresses.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/achievements.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Achievements Menu in the stats Panel of the game.</p>
-									</div>
-									<div class="column"flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/crosshair.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Dynamic crosshairs, which can be selected from the menu and used in game.</p>
-									</div>
-									<div class="column"flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/achshow.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Whenever an achievement is completed a popup is shown and that achievement is updated in the achievements menu.</p>
-									</div>
-									<div class="column"flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/shootingrange.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Designed and implemented a shooting range so the player can practice their shooting skills.</p>
-									</div>
-								</div>	
-								<div style="display: flex; justify-content: center;">
-								<iframe width="560" height="315" src="https://www.youtube.com/embed/oAFewww7YdI" frameborder="0" allowfullscreen></iframe>
-							</div>
-								<p id="runtimeText">Gameplay.</p>
-								<p>
-									<a href="" target="_blank">Not Uploaded Yet!</a>
-								</p>
-								<h2 class="major">FPS Sniper Shooter 3d</h2>
-								<span class="image main"><img src="images/icon2.png" alt="" /></span>
-								<p>
-									An offiline Sniper-first person shooter with proper first person control and limited movement in which the player can choose different weapons and has to shoot the correct target in order to progress through the game.
-								</p>
-								<div style="display: flex; justify-content: center;">
-									<iframe width="560" height="315" src="https://www.youtube.com/embed/CQ6QVn-YW3I" frameborder="0" allowfullscreen></iframe>
-								</div>
-									<p id="runtimeText">Gameplay.</p>
-								<p>
-									<a href="" target="_blank">Not Uploaded Yet!</a>
-								</p>
-								<h2 class="major">FiveOcean 2D</h2>
-								<span class="image main"><img src="images/fiveoceanlogo.png" alt="" /></span>
-								<p>
-									In this 2D game, the player takes on the role of a submarine, tasked with eliminating enemy submarines while navigating through the underwater world.
-								</p>
-								<div class="row">
-									<div class="column" flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/mine.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Mine Enemy with random AOE mine explosion and explode timer.</p>
-									</div>
-									<div class="column"flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/helicopter.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Patrolling helicopter.</p>
-									</div>
-									<div class="column"flex-direction: column;>
-										<video id="gif-video" autoplay loop muted playsinline src="images/watermechanics.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Showcasing the water mechanics (made using shader), and fishes made using boids (the fish culture moves randomly).</p>
-									</div>
-								</div>	
-								<div style="display: flex; justify-content: center;">
-								<iframe width="560" height="315" src="https://www.youtube.com/embed/K3lzeVXhE5g" frameborder="0" allowfullscreen></iframe>
-								</div>
-								<p>FiveOcean gameplay.</p>
-								<p>
-									<a href="https://github.com/burhanahmad02/FiveOcean" target="_blank">Git</a>
-								</p>
-								<h2 class="major">Car Path Draw</h2>
-								<span class="image main"><img src="images/carpathdraw.png" alt="" width="50" /></span>
-								<p>
-									Car game in which the player has to draw path to overcome the hurdles places on their way to the final goal.
-								</p>
-								<div>
-										<video id="gif-video" autoplay loop muted playsinline src="images/carpath.mp4" alt="" width="560" height="315">Your browser does not support the video tag.</video>
-										<div id="fallback-message" style="display: none; color: red; font-weight: bold;">
-											Incompatible browser, use on a different Device.
-										</div>
-										<p id="runtimeText">Player can draw path for the car to reach the end point.</p>
-								</div>
-								<div style="display: flex; justify-content: center;">
-								<iframe width="560" height="315" src="https://www.youtube.com/embed/HNl7Xe6BQS4" frameborder="0" allowfullscreen></iframe>
-								</div>
-								<p id="runtimeText">Car Path Draw gameplay.</p>
-								<p>
-									<a href="https://github.com/burhanahmad02/CarPathDraw" target="_blank">Git</a>
-								</p>
-								<h2 class="major">Cube Absorber</h2>
-								<span class="image main"><img src="images/cubeabsorber.png" alt="" /></span>
-								<p>
-									Endless runner game made using unity 3D for practice.
-								</p>
-								<p>
-									The player has to collect only blue cubes (the cubes are abosrbed),
-									if the player touches cube of any other color, the game is for for them.
-								</p>
-								<p>
-									<a href="https://burhan-ahmad.itch.io/cube-absorber?secret=OGKC4PIQW5x5YrC9ZqhOOeUin84" target="_blank">Play in browser</a>
-								</p>
-								<h2 class="major">Tiny Paws</h2>
-								<span class="image main"><img src="images/tinypaws.png" alt="" /></span>
-								<p>
-									A tiled puzzle game made in javascript in which the player has to connect two points together.
-								</p>
-								<p>
-									Drag and drop the pieces of path, that are placed on the table, pieces that can be used as pathway are placed in the inventroy on the right of the game map.
-									You can rotate said pieces by clicking on them once to rotate it by 45 degrees.
-								</p>
-								<p>
-									<a href="/tinypaws" target="_blank">Play in browser</a>
-								</p>
-								
-							</article>
-								<article id="Articles">
-								<h2 class="major">Lerp vs Slerp</h2>
-								<a href="https://medium.com/@muhdburh/understanding-lerp-and-slerp-smooth-animations-in-unity-1c59a82ff245" target= "_blank">When it comes to creating smooth and natural-looking animations in Unity, two techniques that come to mind are LERP and SLERP. These are popular methods used to interpolate between two values, often used to smoothly transition objects between two positions or rotations over a period of time. In this article, we will delve into LERP and SLERP in Unity, and explore their differences.</a>
-								<h2 class="major">Sending Email in Unity WebGL</h2>
-								<a href="https://medium.com/@muhdburh/sending-email-in-unity-webgl-a-comprehensive-guide-with-cautions-e1148fc045df" target= "_blank">Integrating email functionality into your Unity WebGL game might seem attractive, but it’s critical to understand the potential pitfalls before diving in. Sending emails directly from games presents security risks and can negatively impact deliverability due to spam filters.</a>
-							</article>
-
-						<!-- Contact -->
-							<article id="contact">
-								<h2 class="major">Contact</h2>
-								<form method="post" action="#">
-									<div class="fields">
-										<div class="field half">
-											<label for="name">Name</label>
-											<input type="text" name="name" id="name" />
-										</div>
-										<div class="field half">
-											<label for="email">Email</label>
-											<input type="text" name="email" id="email" />
-										</div>
-										<div class="field">
-											<label for="message">Message</label>
-											<textarea name="message" id="message" rows="4"></textarea>
-										</div>
-									</div>
-									<ul class="actions">
-										<li><input type="submit" value="Send Message" class="primary" /></li>
-										<li><input type="reset" value="Reset" /></li>
-									</ul>
-								</form>
-								<ul class="icons">
-									<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-									<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
-									<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
-									<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
-								</ul>
-							</article>
-
-						<!-- Elements -->
-							
-
+					<div class="experience-item">
+						<h3>Option1 Design Studio — XR Developer</h3>
+						<span class="experience-meta">Dubai, UAE · July 2025 – Present</span>
+						<ul>
+							<li>Developing immersive VR, MR, and AR experiences for international brands using Unity.</li>
+							<li>Integrating XR hardware including Meta Quest, Xreal glasses, Leap Motion, and Hokuyo LiDAR.</li>
+							<li>Building real-time interaction systems with OpenCV and MediaPipe.</li>
+							<li>Implementing networking and backend systems using Meta XR SDK, Photon PUN, and PlayFab.</li>
+							<li>Developing sensor-driven interaction systems using proximity and touch triggers.</li>
+							<li>Assisting in the setup of an internal XR experience center — installation, testing, and debugging.</li>
+							<li>Maintaining interactive installations using Unity.</li>
+						</ul>
 					</div>
 
-				<!-- Footer -->
-					<footer id="footer">
-						<!--
-							<p class="copyright">&copy; Untitled. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
-		-->
-					</footer>
+					<div class="experience-item">
+						<h3>Qubit Events Management — Interactive Software Developer</h3>
+						<span class="experience-meta">Dubai, UAE · March 2023 – Present</span>
+						<ul>
+							<li>Developed an interactive installation for <b>Hugo Boss</b> at Dubai Mall using Unity.</li>
+							<li>Implemented people-detection systems generating dynamic real-time shadows based on user movement.</li>
+							<li>Integrated MediaPipe and YOLO models with Unity for real-time interaction tracking.</li>
+							<li>Combined Unity WebGL, three.js, p5.js, and Arduino for hybrid installations.</li>
+							<li>Implemented video triggers, particle systems, animations, and touchscreen interactions.</li>
+							<li>Designed Arduino-controlled motor systems for installation-based motion control.</li>
+						</ul>
+					</div>
+
+					<div class="experience-item">
+						<h3>GameEver Studio — Unity Game Developer</h3>
+						<span class="experience-meta">Dubai, UAE · April 2022 – March 2023</span>
+						<ul>
+							<li>Developed gameplay systems for multiple projects including FPS and 2D games.</li>
+							<li>Built enemy AI systems, gameplay mechanics, and UI systems.</li>
+							<li>Implemented VFX, shaders, and animation systems.</li>
+							<li>Reduced build size by 30 MB through asset optimization.</li>
+							<li>Developed scalable gameplay systems using Scriptable Objects.</li>
+						</ul>
+					</div>
+
+					<div class="experience-item">
+						<h3>Spartans Global — Unity Game Developer</h3>
+						<span class="experience-meta">Islamabad, Pakistan · Dec 2020 – April 2022</span>
+						<ul>
+							<li>Developed and maintained mobile games using Unity.</li>
+							<li>Implemented systems using Scriptable Objects, Addressables, and JSON-based data management.</li>
+							<li>Worked on physics systems, gameplay mechanics, UI systems, and optimization.</li>
+							<li>Collaborated with art and design teams to deliver polished game features.</li>
+						</ul>
+					</div>
+
+					<h3>Education</h3>
+					<p><b>Bachelor of Computer Science</b><br />
+						Islamabad, Pakistan · Feb 2017 – May 2021 · CGPA 3.05 / 4.0</p>
+				</article>
+
+				<!-- Tech Stack -->
+				<article id="stack">
+					<h2 class="major">Tech Stack</h2>
+
+					<h3>Game &amp; XR Development</h3>
+					<ul class="skill-list">
+						<li>Unity</li><li>VR</li><li>MR</li><li>AR</li>
+						<li>Meta XR SDK</li><li>Photon PUN</li><li>PlayFab</li>
+					</ul>
+
+					<h3>Languages</h3>
+					<ul class="skill-list">
+						<li>C#</li><li>Python</li><li>Node.js</li>
+					</ul>
+
+					<h3>Computer Vision &amp; Sensors</h3>
+					<ul class="skill-list">
+						<li>OpenCV</li><li>MediaPipe</li><li>YOLO</li>
+						<li>Leap Motion</li><li>Hokuyo LiDAR</li><li>Arduino</li>
+					</ul>
+
+					<h3>Web &amp; Interactive</h3>
+					<ul class="skill-list">
+						<li>WebGL</li><li>three.js</li><li>p5.js</li><li>TouchDesigner</li>
+					</ul>
+
+					<h3>Tools</h3>
+					<ul class="skill-list">
+						<li>Git</li><li>GitLab</li><li>Trello</li><li>Slack</li>
+						<li>Bitrix</li><li>Doxygen</li><li>ClickUp</li>
+					</ul>
+
+					<h3>Other</h3>
+					<ul class="skill-list">
+						<li>Procedural Generation</li><li>Real-time Rendering</li>
+						<li>Sensor Integration</li><li>Interactive Installations</li>
+						<li>Shaders &amp; VFX</li>
+					</ul>
+				</article>
+
+				<!-- Interactive Projects -->
+				<article id="Projects" style="position: relative;">
+					<h2 class="major">HugoBoss Interactive Shadows</h2>
+					<p>
+						Interactive installation for luxury brand in which I collaborated with a team member at BriteMinds to create a custom human detection model. I used
+						data from this detection model in Unity to create an immersive experience using VFX, shaders, and keyframe animations.
+					</p>
+					<div class="row">
+						<div class="video-container" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata"
+								src="images/hugoboss.mp4"
+								width="560"
+								height="315">
+								Your browser does not support the video tag.
+							</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration in Dubai Mall.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Luminous Interactive Floor</h2>
+					<span class="image main"><img src="images/lusail.jpg" alt="Lusail Festival floor installation" loading="lazy" /></span>
+					<p>
+						Interactive installation for a lights festival in Qatar in which I collaborated with renowned artist <b><a href="https://georgiepinn.com" target="_blank" rel="noopener">Georgie Pinn</a></b> — known for her
+						interactive and innovative installations in Brisbane — and a fellow Unity Developer <b>Nathan Clarkson</b> to create custom particle effects
+						showcasing fireworks harmony, seamlessly handling 10–15 visitors at once.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/lusail.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration in Lusail Festival in Doha, Qatar.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Qadsiah Festival Floor</h2>
+					<p>
+						Interactive installation for a festival in Saudi Arabia in which we created a custom air-hockey game showcasing VFX and particles.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/Qadsiah.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration in Qadsiah Festival in Riyadh, Saudi Arabia.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Loewe Interactive Floor</h2>
+					<p>
+						Interactive installation for luxury brand in which I collaborated with renowned artist <b>Seph Li</b> — known for his
+						interactive ink-based art — to create custom particle effects showcasing the nature of water (ripples, magnetic field, vortex),
+						seamlessly handling 10–15 visitors at once.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/Loewe.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration in Dubai Mall.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Custom Interactive Projects</h2>
+					<p>
+						Particles and VFX have always captivated me, especially when integrated into interactive installations like projection
+						mapping, interactive floors, or webcam-controlled experiences. The ability to craft and control dynamic visuals adds
+						an exciting layer of creativity and innovation. Here are a few projects where I honed my skills in Unity 3D and TouchDesigner.
+						<b>A custom menu can be developed for any of these projects to manipulate particle size, speed, and behaviour.</b>
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/custom1.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<p class="runtimeText">Custom VFX generative particles.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/custom2.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<p class="runtimeText">Runtime demonstration on the floor.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/customgridgame.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration on the floor.</p>
+							<a href="#howIMade" class="scaled-link">How I Made</a>
+						</div>
+					</div>
+
+					<h2 class="major">Tangible Screen Projects</h2>
+					<p>
+						While working on tangible screen projects, I developed custom programs to calculate the angles between
+						the support points on each puck. This mathematical approach allowed me to differentiate between
+						individual pucks and assign specific objects to them within the applications.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/tangible.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Custom software for creating tangible screen effect without any object recognition.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/tabgible.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Demonstration video.</p>
+						</div>
+					</div>
+				</article>
+
+				<!-- "How I Made" Section -->
+				<article id="howIMade" style="position: relative;">
+					<h2 class="major">How I Made</h2>
+					<div class="column" style="flex-direction: column;">
+						<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/customgridinteractivefloor.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+						<div class="fallback-message">Incompatible browser, use on a different device.</div>
+						<p class="runtimeText">Custom grid logic generated at runtime.</p>
+					</div>
+					<div class="column" style="flex-direction: column;">
+						<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/customgrid.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+						<div class="fallback-message">Incompatible browser, use on a different device.</div>
+						<p class="runtimeText">Game logic for the floor game.</p>
+					</div>
+				</article>
+
+				<!-- AR -->
+				<article id="AR" style="position: relative;">
+					<h2 class="major">AR Try-On</h2>
+					<p>
+						Utilized MediaPipe face tracking to get landmarks of eyes and nose, and sized 3D glasses models to each person so they fit perfectly.
+						Added functionality to take pictures and send emails — built with <b>Node.js</b> to receive picture bytes from Unity, convert them
+						into images, and dispatch via email.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/AR-TryOn.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+
+					<h2 class="major">AR Particle Control</h2>
+					<p>
+						Modified a cursor-control Python library to drive particle behaviour based on cursor movement in TouchDesigner. The particle style
+						was inspired by Dragon Ball Super — Goku Ultra Instinct animation.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/UltraInstinct.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/orb vfx.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">An orb-shaped VFX that can be controlled by manipulating size, emissions, strength, and colors.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/orbvfxanim.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">More control over the effect and environment.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/ARBoids.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">VFX generating fishes that move in boids; once a hand is detected, they stop moving randomly and follow hand movements.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Camera Control — Forced Perspective</h2>
+					<p>
+						Used MediaPipe to create custom head-tracking software, allowing the Unity camera to focus on a point and move around it —
+						replicating a forced-perspective behaviour.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/MixedAR.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Camera Control — Roller Coaster</h2>
+					<p>
+						Used MediaPipe to create custom head-tracking software based on which the Unity camera rotates. When incorporated into a custom rollercoaster
+						project, it creates the illusion that the person is actually sitting on the ride and enjoying the scenic views.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/Rollercoaster.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/TouchDesigner.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/TouchDesignernew.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+				</article>
+
+				<!-- VR -->
+				<article id="VR" style="position: relative;">
+					<h2 class="major">VR Learning</h2>
+					<p>
+						Modified the demo scene provided by Unity Learn for VR and added new interactions for displaying
+						and controlling a 3D model of a train.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/train.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Infinite Zoom</h2>
+					<p>
+						Tried replicating the infinite-picture-zoom effect, but instead of using pictures I used 3D models and created
+						a custom shader effect to replicate the same effect.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/infinitezoom.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+						</div>
+					</div>
+
+					<h2 class="major">Object Grab</h2>
+					<p>
+						Used the same objects from the infinite-zoom project and added object grab and rotate functionality tied to controller movement.
+					</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/Grab.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+						</div>
+					</div>
+				</article>
+
+				<!-- Older Game Projects -->
+				<article id="OldProjects">
+					<h2 class="major">Custom Car Controller</h2>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/cargame.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Runtime demonstration.</p>
+						</div>
+					</div>
+
+					<h2 class="major">Rush To Crush</h2>
+					<span class="image main"><img src="images/rush2crush.jpg" alt="Rush To Crush cover" loading="lazy" /></span>
+					<p>Bike game with thrilling tracks packed with bike-stunt missions and extreme bike races.</p>
+					<p><a href="https://play.google.com/store/apps/details?id=com.ghive.endless.car.race.traffic.drive.apps" target="_blank" rel="noopener">Download</a></p>
+
+					<h2 class="major">FPS Fire Battle Royal Survival</h2>
+					<span class="image main"><img src="images/fps.jpg" alt="FPS Fire Battle Royal cover" loading="lazy" /></span>
+					<p>An offline first-person shooter with proper FPS controls and movement, weapon selection, and progression rewards.</p>
+					<p><a href="https://play.google.com/store/apps/details?id=com.GameEver.FPSCommandoWar&hl=en&gl=US" target="_blank" rel="noopener">Download</a></p>
+
+					<h2 class="major">Fashion Makeover</h2>
+					<span class="image main"><img src="images/makeover.png" alt="Fashion Makeover cover" loading="lazy" /></span>
+					<p>Fashion makeover game that allows players to design a unique dressing style and enhance their fashion sense through beauty makeup.</p>
+					<p><a href="https://play.google.com/store/apps/details?id=com.sg.fashion.makeover.dressup.game&hl=en_US&gl=US" target="_blank" rel="noopener">Download</a></p>
+
+					<h2 class="major">Santa Pin-Pull</h2>
+					<span class="image main"><img src="images/santa-pinpull.jpg" alt="Santa Pin-Pull cover" loading="lazy" width="50" /></span>
+					<p>A puzzle game made with Unity and C# in which the player has to unlock pins to pave the way for Santa to reach the kid and hand out gifts.</p>
+					<p><a href="https://play.google.com/store/apps/details?id=com.santa.gift.pinpull.free.games&hl=en&gl=US" target="_blank" rel="noopener">Download</a></p>
+
+					<h2 class="major">FPS Sci-Fi Shooter</h2>
+					<span class="image main"><img src="images/icon.png" alt="FPS Sci-Fi Shooter icon" loading="lazy" /></span>
+					<p>An offline sci-fi first-person shooter with proper FPS controls, weapon selection, and enemies that grow stronger as the level progresses.</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/achievements.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Achievements menu in the stats panel of the game.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/crosshair.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Dynamic crosshairs — selectable from the menu and used in game.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/achshow.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">When an achievement is completed a popup is shown and the achievement updates in the menu.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/shootingrange.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Designed and implemented a shooting range to practice shooting skills.</p>
+						</div>
+					</div>
+					<div style="display: flex; justify-content: center;">
+						<iframe width="560" height="315" src="https://www.youtube.com/embed/oAFewww7YdI" title="FPS Sci-Fi Shooter gameplay" frameborder="0" allowfullscreen loading="lazy"></iframe>
+					</div>
+					<p class="runtimeText">Gameplay.</p>
+
+					<h2 class="major">FPS Sniper Shooter 3D</h2>
+					<span class="image main"><img src="images/icon2.png" alt="FPS Sniper Shooter icon" loading="lazy" /></span>
+					<p>An offline sniper-FPS with proper first-person control and limited movement. The player can choose weapons and must shoot the correct target to progress.</p>
+					<div style="display: flex; justify-content: center;">
+						<iframe width="560" height="315" src="https://www.youtube.com/embed/CQ6QVn-YW3I" title="FPS Sniper Shooter gameplay" frameborder="0" allowfullscreen loading="lazy"></iframe>
+					</div>
+					<p class="runtimeText">Gameplay.</p>
+
+					<h2 class="major">FiveOcean 2D</h2>
+					<span class="image main"><img src="images/fiveoceanlogo.png" alt="FiveOcean logo" loading="lazy" /></span>
+					<p>In this 2D game, the player takes on the role of a submarine, tasked with eliminating enemy submarines while navigating the underwater world.</p>
+					<div class="row">
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/mine.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Mine enemy with random AoE mine explosion and explode timer.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/helicopter.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Patrolling helicopter.</p>
+						</div>
+						<div class="column" style="flex-direction: column;">
+							<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/watermechanics.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+							<div class="fallback-message">Incompatible browser, use on a different device.</div>
+							<p class="runtimeText">Showcasing water mechanics (made using shaders), and fish made using boids.</p>
+						</div>
+					</div>
+					<div style="display: flex; justify-content: center;">
+						<iframe width="560" height="315" src="https://www.youtube.com/embed/K3lzeVXhE5g" title="FiveOcean gameplay" frameborder="0" allowfullscreen loading="lazy"></iframe>
+					</div>
+					<p>FiveOcean gameplay.</p>
+					<p><a href="https://github.com/burhanahmad02/FiveOcean" target="_blank" rel="noopener">Git</a></p>
+
+					<h2 class="major">Car Path Draw</h2>
+					<span class="image main"><img src="images/carpathdraw.png" alt="Car Path Draw cover" loading="lazy" width="50" /></span>
+					<p>Car game in which the player has to draw a path to overcome hurdles on their way to the final goal.</p>
+					<div>
+						<video class="gif-video" autoplay loop muted playsinline preload="metadata" src="images/carpath.mp4" width="560" height="315">Your browser does not support the video tag.</video>
+						<div class="fallback-message">Incompatible browser, use on a different device.</div>
+						<p class="runtimeText">Player can draw a path for the car to reach the end point.</p>
+					</div>
+					<div style="display: flex; justify-content: center;">
+						<iframe width="560" height="315" src="https://www.youtube.com/embed/HNl7Xe6BQS4" title="Car Path Draw gameplay" frameborder="0" allowfullscreen loading="lazy"></iframe>
+					</div>
+					<p class="runtimeText">Car Path Draw gameplay.</p>
+					<p><a href="https://github.com/burhanahmad02/CarPathDraw" target="_blank" rel="noopener">Git</a></p>
+
+					<h2 class="major">Cube Absorber</h2>
+					<span class="image main"><img src="images/cubeabsorber.png" alt="Cube Absorber cover" loading="lazy" /></span>
+					<p>Endless runner game made in Unity 3D for practice.</p>
+					<p>The player has to collect only blue cubes (the cubes are absorbed). If they touch a cube of any other color, the game is over.</p>
+					<p><a href="https://burhan-ahmad.itch.io/cube-absorber?secret=OGKC4PIQW5x5YrC9ZqhOOeUin84" target="_blank" rel="noopener">Play in browser</a></p>
+
+					<h2 class="major">Tiny Paws</h2>
+					<span class="image main"><img src="images/tinypaws.png" alt="Tiny Paws cover" loading="lazy" /></span>
+					<p>A tiled puzzle game made in JavaScript in which the player has to connect two points together.</p>
+					<p>Drag and drop the path pieces placed on the table; pieces usable as pathway sit in the inventory on the right of the game map. Rotate pieces by clicking them to rotate by 45 degrees.</p>
+					<p><a href="/tinypaws" target="_blank" rel="noopener">Play in browser</a></p>
+				</article>
+
+				<!-- Articles -->
+				<article id="Articles">
+					<h2 class="major">Lerp vs Slerp</h2>
+					<a href="https://medium.com/@muhdburh/understanding-lerp-and-slerp-smooth-animations-in-unity-1c59a82ff245" target="_blank" rel="noopener">When it comes to creating smooth and natural-looking animations in Unity, two techniques come to mind: LERP and SLERP. These are popular methods for interpolating between two values, often used to smoothly transition objects between positions or rotations over time. In this article, we explore LERP and SLERP in Unity and their differences.</a>
+
+					<h2 class="major">Sending Email in Unity WebGL</h2>
+					<a href="https://medium.com/@muhdburh/sending-email-in-unity-webgl-a-comprehensive-guide-with-cautions-e1148fc045df" target="_blank" rel="noopener">Integrating email functionality into your Unity WebGL game might seem attractive, but it's critical to understand the potential pitfalls before diving in. Sending emails directly from games presents security risks and can negatively impact deliverability due to spam filters.</a>
+				</article>
+
+				<!-- Contact -->
+				<article id="contact">
+					<h2 class="major">Contact</h2>
+					<p>Got a project, installation, or XR build in mind? Drop me a line — I'd love to hear about it.</p>
+					<form method="post" action="mailto:muhdburh@gmail.com" enctype="text/plain">
+						<div class="fields">
+							<div class="field half">
+								<label for="name">Name</label>
+								<input type="text" name="name" id="name" required />
+							</div>
+							<div class="field half">
+								<label for="email">Email</label>
+								<input type="email" name="email" id="email" required />
+							</div>
+							<div class="field">
+								<label for="message">Message</label>
+								<textarea name="message" id="message" rows="4" required></textarea>
+							</div>
+						</div>
+						<ul class="actions">
+							<li><input type="submit" value="Send Message" class="primary" /></li>
+							<li><input type="reset" value="Reset" /></li>
+						</ul>
+					</form>
+					<ul class="icons">
+						<li><a href="mailto:muhdburh@gmail.com" class="icon solid fa-envelope" aria-label="Email"><span class="label">Email</span></a></li>
+						<li><a href="https://www.linkedin.com/in/burhan066/" target="_blank" rel="noopener" class="icon brands fa-linkedin" aria-label="LinkedIn"><span class="label">LinkedIn</span></a></li>
+						<li><a href="https://github.com/burhanahmad02" target="_blank" rel="noopener" class="icon brands fa-github" aria-label="GitHub"><span class="label">GitHub</span></a></li>
+						<li><a href="https://medium.com/@muhdburh" target="_blank" rel="noopener" class="icon brands fa-medium" aria-label="Medium"><span class="label">Medium</span></a></li>
+					</ul>
+				</article>
 
 			</div>
 
+			<!-- Footer -->
+			<footer id="footer">
+				<p class="copyright">&copy; Burhan Ahmad. Design: <a href="https://html5up.net" rel="noopener">HTML5 UP</a>.</p>
+			</footer>
+
+		</div>
+
 		<!-- BG -->
-			<div id="bg"></div>
+		<div id="bg"></div>
 
 		<!-- Scripts -->
-<!-- Scripts -->
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/browser.min.js"></script>
+		<script src="assets/js/breakpoints.min.js"></script>
+		<script src="assets/js/util.js"></script>
+		<script src="assets/js/main.js"></script>
 
-<style>
-    .scaled-link {
-        font-size: 18px;
-        color: #fcfcfc;
-        text-decoration: none;
-        display: inline-block;
-        animation: scale-up-down 2s infinite;  /* Apply the scale animation */
-    }
-
-    /* Keyframe animation for scaling up and down */
-    @keyframes scale-up-down {
-        0% {
-            transform: scale(1) translateY(0);  /* Initial state */
-        }
-        50% {
-            transform: scale(1.2) translateY(-5px);  /* Scale up and move up */
-        }
-        100% {
-            transform: scale(1) translateY(0);  /* Return to original position */
-        }
-    }
-
-    .scaled-link:hover {
-        color: #FF5733;  /* Change color when hovered */
-    }
-</style>
-<script>
-    const video = document.getElementById("gif-video");
-    const fallbackMessage = document.getElementById("fallback-message");
-
-    // Check if the video has any errors during loading
-    video.addEventListener("error", () => {
-        fallbackMessage.style.display = "block"; // Show the fallback message
-        video.style.display = "none";           // Hide the video element
-    });
-
-    // Alternatively, you can check if the video can play
-    video.addEventListener("canplay", () => {
-        fallbackMessage.style.display = "none"; // Hide the fallback message
-    });
-</script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-    // Initialize variables
-    let scene, camera, renderer;
-    let particles = [];
-    let particleEmitter;
-
-    // Function to initialize the scene
-    function init() {
-        // Create scene
-        scene = new THREE.Scene();
-
-        // Create camera
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-        camera.position.z = 1000;
-
-        // Create renderer
-        renderer = new THREE.WebGLRenderer();
-        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
-        document.getElementById('particle-container').appendChild(renderer.domElement);
-
-        // Create particle emitter
-        particleEmitter = new THREE.Object3D();
-        scene.add(particleEmitter);
-
-        // Add event listener for mouse movement
-        document.addEventListener('mousemove', onMouseMove, false);
-
-        // Create custom particles
-        const particleCount = 500;
-        for (let i = 0; i < particleCount; i++) {
-            const geometry = new THREE.BoxGeometry(10, 10, 10); // Custom geometry (e.g., cube)
-            const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
-            const particle = new THREE.Mesh(geometry, material);
-            particle.position.set(Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000);
-            particleEmitter.add(particle);
-            particles.push(particle);
-        }
-    }
-
-    // Function to handle mouse movement
-    function onMouseMove(event) {
-        // Update particle emitter position based on mouse movement
-        particleEmitter.position.x = (event.clientX / window.innerWidth) * 2000 - 1000;
-        particleEmitter.position.y = -(event.clientY / window.innerHeight) * 2000 + 1000;
-    }
-
-    // Function to animate the scene
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-    }
-
-    // Function to render the scene
-    function render() {
-        renderer.render(scene, camera);
-    }
-
-    // Initialize and start animation
-    init();
-    animate();
-
-    // Resize renderer when window is resized
-    window.addEventListener('resize', onWindowResize, false);
-
-    // Function to handle window resize
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(document.getElementById('particle-container').clientWidth, document.getElementById('particle-container').clientHeight);
-    }
-</script>
-		<!-- Include Three.js library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/browser.min.js"></script>
-			<script src="assets/js/breakpoints.min.js"></script>
-			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/ammo.js/2.0.0/ammo.wasm.js"></script>
-			<script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.66/build/spline-viewer.js"></script>
-
-			<script>
-			  var myVideo = document.getElementById('gif-video');
-			  myVideo.playbackRate = 5.0;
-			</script>
+		<script>
+			// Show fallback message if a video fails to load.
+			document.querySelectorAll('.gif-video').forEach(function (video) {
+				video.addEventListener('error', function () {
+					var fb = video.parentElement && video.parentElement.querySelector('.fallback-message');
+					if (fb) {
+						fb.style.display = 'block';
+						video.style.display = 'none';
+					}
+				});
+			});
+		</script>
 
 	</body>
 </html>
