@@ -1,0 +1,324 @@
+/*
+	Burhan Ahmad, walk-through portfolio.
+	The world is a fixed WebGL canvas. The page scrolls normally over it, and
+	each project section is one stop on the walk. The text stays quiet and
+	black and white so the scenes and the footage carry the colour.
+*/
+
+:root {
+	--bg: #08080a;
+	--fg: #f3f1ec;
+	--muted: #a19f99;
+	--line: rgba(243, 241, 236, 0.16);
+	--accent: #f3f1ec;
+	--font: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+	--gutter: clamp(1rem, 4vw, 3.5rem);
+	color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 1.0625rem;
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+	overflow-x: hidden;
+}
+
+a { color: inherit; }
+img, video { display: block; max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+/* Nav */
+.nav {
+	position: fixed;
+	z-index: 30;
+	top: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1.1rem var(--gutter);
+	padding-top: calc(1.1rem + env(safe-area-inset-top, 0px));
+	font-size: 0.9rem;
+}
+.nav-name { font-weight: 700; font-stretch: 125%; text-decoration: none; letter-spacing: -0.01em; }
+.nav nav { display: flex; gap: clamp(0.9rem, 2.4vw, 2rem); }
+.nav nav a { text-decoration: none; color: var(--muted); transition: color 0.2s; }
+.nav nav a:hover { color: var(--fg); }
+
+/* World */
+.world {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+}
+#scene, #scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#scene canvas { cursor: default; touch-action: pan-y; }
+#scene canvas.is-pointing { cursor: pointer; }
+.vignette {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(90deg, rgba(8, 8, 10, 0.78) 0%, rgba(8, 8, 10, 0.35) 30%, rgba(8, 8, 10, 0) 48%),
+		linear-gradient(0deg, rgba(8, 8, 10, 0.5) 0%, rgba(8, 8, 10, 0) 22%);
+}
+
+/* Progress */
+.hud {
+	position: fixed;
+	z-index: 20;
+	left: var(--gutter);
+	right: var(--gutter);
+	bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	pointer-events: none;
+	font-size: 0.78rem;
+	color: var(--muted);
+	letter-spacing: 0.04em;
+}
+.track { flex: 1; height: 1px; background: var(--line); position: relative; }
+.track-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--fg); }
+.hud-chapter { min-width: 9rem; text-align: right; }
+
+/* Stops */
+.stops { position: relative; z-index: 10; }
+.stop { position: relative; }
+.panel { max-width: 25rem; }
+
+.kicker {
+	font-size: 0.8rem;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+	margin-bottom: 0.9rem;
+}
+h1 {
+	font-size: clamp(3rem, 8.5vw, 7.5rem);
+	font-weight: 800;
+	font-stretch: 125%;
+	line-height: 0.88;
+	letter-spacing: -0.035em;
+	margin-bottom: 1.4rem;
+}
+h2 {
+	font-size: clamp(2rem, 4vw, 3.2rem);
+	font-weight: 750;
+	font-stretch: 112%;
+	line-height: 0.98;
+	letter-spacing: -0.025em;
+	margin-bottom: 0.7rem;
+}
+.lede { font-size: 1.12rem; color: #d6d4ce; max-width: 24rem; }
+.lede-sm { font-size: 1.05rem; color: #e2e0da; margin-bottom: 0.8rem; }
+.meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem; }
+.panel p + p { margin-top: 0.6rem; }
+.tools { color: var(--muted); font-size: 0.86rem; }
+.watch, .again {
+	margin-top: 1.4rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6rem;
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--bg);
+	background: var(--fg);
+	border: 0;
+	border-radius: 999px;
+	padding: 0.7rem 1.15rem;
+	cursor: pointer;
+	text-decoration: none;
+	transition: transform 0.2s;
+}
+.watch::before {
+	content: '';
+	width: 0;
+	height: 0;
+	border-left: 0.5rem solid currentColor;
+	border-top: 0.32rem solid transparent;
+	border-bottom: 0.32rem solid transparent;
+}
+.watch:hover, .again:hover { transform: translateY(-1px); }
+
+.scroll-cue {
+	margin-top: 2.4rem;
+	display: flex;
+	align-items: center;
+	gap: 0.8rem;
+	font-size: 0.85rem;
+	color: var(--muted);
+}
+.cue-line { width: 3rem; height: 1px; background: var(--muted); position: relative; overflow: hidden; }
+.cue-line::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: var(--fg);
+	transform: translateX(-100%);
+	animation: cue 2.2s ease-in-out infinite;
+}
+@keyframes cue { 60%, 100% { transform: translateX(100%); } }
+
+.roles { list-style: none; padding: 0; margin: 1.2rem 0; border-top: 1px solid var(--line); }
+.roles li {
+	display: grid;
+	grid-template-columns: 6.5rem 1fr;
+	gap: 0 1rem;
+	padding: 0.6rem 0;
+	border-bottom: 1px solid var(--line);
+	font-size: 0.92rem;
+}
+.roles li span:first-child { color: var(--muted); grid-row: span 2; }
+.roles li span:last-child { color: var(--muted); }
+
+.mail {
+	display: inline-block;
+	margin-top: 1.2rem;
+	font-size: clamp(1.3rem, 2.4vw, 1.8rem);
+	font-weight: 700;
+	font-stretch: 110%;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.25em;
+}
+.links { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; gap: 1.4rem; }
+.links a { color: var(--muted); text-decoration: none; }
+.links a:hover { color: var(--fg); }
+.again { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+
+/* 3D layout: each stop is a stretch of the walk. Its panel pins while
+   Burhan crosses that stretch, and JS fades it with --vis. */
+.is-3d .stop { height: 190vh; }
+.is-3d .stop-intro { height: 150vh; }
+.is-3d .stop-about { height: 210vh; }
+.is-3d .stop-contact { height: 160vh; }
+.is-3d .panel {
+	position: sticky;
+	top: 0;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 5rem var(--gutter) 4rem;
+	max-width: calc(25rem + 2 * var(--gutter));
+	opacity: var(--vis, 0);
+	transform: translateY(calc((1 - var(--vis, 0)) * 1.2rem));
+	will-change: opacity, transform;
+}
+.is-3d .panel > * { align-self: flex-start; }
+/* a soft shadow keeps the copy readable over bright scenes */
+.is-3d .panel h1, .is-3d .panel h2, .is-3d .panel p, .is-3d .panel li { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 22px rgba(0, 0, 0, 0.6); }
+.is-3d .panel-wide { max-width: calc(30rem + 2 * var(--gutter)); }
+.is-3d .stop-intro .panel { max-width: calc(34rem + 2 * var(--gutter)); }
+.is-3d .panel.is-off { visibility: hidden; }
+
+@media (max-width: 999px) {
+	.is-3d .panel {
+		justify-content: flex-end;
+		padding: 5rem 1rem 3.6rem;
+		max-width: none;
+	}
+	.is-3d .panel > * { position: relative; }
+	.is-3d .panel::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 58%;
+		background: linear-gradient(0deg, rgba(8, 8, 10, 0.94) 35%, rgba(8, 8, 10, 0));
+		pointer-events: none;
+	}
+	.is-3d .stop-intro .panel::before { height: 70%; }
+	.is-3d .stop-about .panel::before { height: 100%; background: rgba(8, 8, 10, 0.82); }
+	.vignette { background: linear-gradient(0deg, rgba(8, 8, 10, 0.4) 0%, rgba(8, 8, 10, 0) 30%); }
+	h1 { font-size: 3.2rem; }
+	h2 { font-size: 1.9rem; }
+	.lede { font-size: 1rem; }
+	.stop-about .panel p:not(.kicker):not(.lede-sm) { font-size: 0.92rem; }
+	.stop-about .roles li { font-size: 0.85rem; padding: 0.4rem 0; }
+	.stop-about .tools { display: none; }
+	.hud-chapter { min-width: 0; }
+	.nav { font-size: 0.85rem; }
+	.nav nav { gap: 0.9rem; }
+}
+
+/* Lite: a plain scrolling page with each clip inline */
+.is-lite .world, .is-lite .hud, .is-lite .only-3d { display: none !important; }
+.is-lite .stops { padding: 5rem var(--gutter) 3rem; max-width: 70rem; margin: 0 auto; }
+.is-lite .stop { padding: 3.5rem 0; border-bottom: 1px solid var(--line); display: grid; gap: 1.5rem; }
+.is-lite .stop-intro { padding-top: 6rem; }
+@media (min-width: 820px) {
+	.is-lite .stop:not(.stop-intro):not(.stop-about):not(.stop-contact) { grid-template-columns: 1.5fr 1fr; align-items: center; }
+}
+.lite-media { background: #000; }
+.lite-media video { width: 100%; height: auto; max-height: 80vh; object-fit: contain; cursor: pointer; }
+
+/* Player */
+.player {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	max-width: 100vw;
+	max-height: 100vh;
+}
+.player::backdrop { background: rgba(0, 0, 0, 0.9); }
+.player video { max-width: 92vw; max-height: 86vh; background: #000; }
+.player-close {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	font: inherit;
+	font-size: 0.9rem;
+	color: var(--fg);
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+}
+.is-lite .nav { background: rgba(8, 8, 10, 0.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+/* Milestone gates on the timeline */
+.is-3d .stop-gate { height: 150vh; }
+.gate-year {
+	font-size: clamp(4rem, 11vw, 9rem);
+	font-weight: 800;
+	font-stretch: 125%;
+	line-height: 0.8;
+	letter-spacing: -0.04em;
+	margin-bottom: 0.9rem;
+	font-variant-numeric: tabular-nums;
+}
+.gate-notes { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.45rem; }
+.gate-notes li { padding-left: 1.1rem; position: relative; color: #d6d4ce; font-size: 0.98rem; }
+.gate-notes li::before { content: ''; position: absolute; left: 0; top: 0.68em; width: 0.5rem; height: 1px; background: var(--muted); }
+.is-lite .stop-gate { grid-template-columns: 1fr !important; }
+
+/* Timeline ticks under the progress line */
+.track-ticks { position: absolute; inset: 0; }
+.track-tick { position: absolute; top: -3px; width: 1px; height: 7px; background: var(--muted); }
+.track-tick span {
+	position: absolute;
+	top: -1.35rem;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 0.7rem;
+	letter-spacing: 0.04em;
+	font-variant-numeric: tabular-nums;
+	color: var(--muted);
+	transition: color 0.3s;
+}
+.track-tick.is-past { background: var(--fg); }
+.track-tick.is-past span { color: var(--fg); }
+@media (max-width: 999px) { .gate-year { font-size: 4.2rem; } .track-tick span { font-size: 0.62rem; } }
