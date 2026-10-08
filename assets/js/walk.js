@@ -17,201 +17,68 @@
 
 	var root = document.documentElement;
 	var stops = [].slice.call(document.querySelectorAll('.stop'));
-	var projects = stops.filter(function (s) { return s.classList.contains('stop-project'); });
-	var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-	// set by the 3D walk once it is running; both stay no-ops in lite mode
-	var walk = { pause: function () {}, resume: function () {}, goTo: null };
 
-	/* ---------- Dialogs: video player, selected work, project details ---------- */
-
-	// the walk pauses while any dialog is open and picks up again when the last one closes
-	var openDialogs = 0, lastFocus = [];
-	function showDialog(d) {
-		if (d.open) return;
-		lastFocus.push(document.activeElement);
-		if (openDialogs++ === 0) walk.pause();
-		if (d.showModal) d.showModal(); else d.setAttribute('open', '');
-	}
-	function hideDialog(d) {
-		if (!d.open) return;
-		if (d.close) d.close(); else { d.removeAttribute('open'); dialogClosed(d); }
-	}
-	function dialogClosed() {
-		openDialogs = Math.max(0, openDialogs - 1);
-		var f = lastFocus.pop();
-		if (f && f.focus && document.contains(f)) f.focus({ preventScroll: true });
-		if (openDialogs === 0) walk.resume();
-	}
-	function unload(v) { v.pause(); v.removeAttribute('src'); v.load(); }
+	/* ---------- Video player (both modes) ---------- */
 
 	var player = document.querySelector('.player');
 	var playerVideo = player.querySelector('video');
+	var playerHooks = {};
 	function openPlayer(stop) {
+		if (playerHooks.open) playerHooks.open();
 		var full = stop.getAttribute('data-full');
 		var clip = stop.getAttribute('data-video');
 		playerVideo.onerror = function () {
 			if (clip && playerVideo.getAttribute('src') !== clip) { playerVideo.src = clip; playerVideo.play().catch(function () {}); }
 		};
 		playerVideo.muted = false;
-		playerVideo.poster = stop.getAttribute('data-poster') || '';
 		playerVideo.src = full || clip;
-		showDialog(player);
+		if (player.showModal) player.showModal(); else player.setAttribute('open', '');
 		playerVideo.play().catch(function () {});
 	}
-	player.querySelector('.player-close').addEventListener('click', function () { hideDialog(player); });
-	player.addEventListener('click', function (e) { if (e.target === player) hideDialog(player); });
-	player.addEventListener('close', function () { unload(playerVideo); dialogClosed(); });
-
-	function text(el, sel) { var n = el.querySelector(sel); return n ? n.textContent.replace(/\s+/g, ' ').trim() : ''; }
-	var CATS = [
-		{ key: '', label: 'All' },
-		{ key: 'games', label: 'Games' },
-		{ key: 'installations', label: 'Interactive installations' },
-		{ key: 'xr', label: 'XR / VR / AR' },
-		{ key: 'rnd', label: 'Research & development' }
-	];
-	var work = projects.slice().sort(function (a, b) { return (+a.getAttribute('data-order') || 99) - (+b.getAttribute('data-order') || 99); });
-
-	// Project details: the full video, the facts and any longer notes, with
-	// previous and next to move through the selected work in order.
-	var cased = document.querySelector('.case');
-	var caseVideo = cased.querySelector('video');
-	var caseAt = 0;
-	function fillCase(i) {
-		caseAt = (i + work.length) % work.length;
-		var s = work[caseAt];
-		cased.querySelector('.case-kicker').textContent = text(s, '.exhibit-info .eyebrow');
-		cased.querySelector('#case-title').textContent = text(s, 'h2');
-		cased.querySelector('.case-desc').textContent = text(s, '.exhibit-desc');
-		var facts = s.querySelector('.facts');
-		cased.querySelector('.case-facts').innerHTML = facts ? facts.innerHTML : '';
-		var slot = cased.querySelector('.case-more-slot'), more = s.querySelector('.case-more');
-		slot.innerHTML = more ? more.innerHTML : '';
-		var full = s.getAttribute('data-full'), clip = s.getAttribute('data-video');
-		caseVideo.onerror = function () { if (clip && caseVideo.getAttribute('src') !== clip) caseVideo.src = clip; };
-		caseVideo.poster = s.getAttribute('data-poster') || '';
-		caseVideo.src = full || clip;
-		var ar = (s.getAttribute('data-ar') || '16/9').split('/');
-		cased.querySelector('.case-media').style.aspectRatio = parseFloat(ar[0]) / parseFloat(ar[1]) < 1.2 ? '4 / 3' : '16 / 9';
-		var prev = work[(caseAt - 1 + work.length) % work.length], next = work[(caseAt + 1) % work.length];
-		cased.querySelector('.case-prev span').textContent = text(prev, 'h2');
-		cased.querySelector('.case-next span').textContent = text(next, 'h2');
-		cased.querySelector('.case-prev').setAttribute('aria-label', 'Previous project: ' + text(prev, 'h2'));
-		cased.querySelector('.case-next').setAttribute('aria-label', 'Next project: ' + text(next, 'h2'));
-		cased.querySelector('.case-goto').setAttribute('href', '#' + s.id);
-		cased.scrollTop = 0;
+	function closePlayer() {
+		playerVideo.pause();
+		playerVideo.removeAttribute('src');
+		playerVideo.load();
+		if (player.close) player.close(); else player.removeAttribute('open');
 	}
-	function openCase(stop) {
-		fillCase(work.indexOf(stop));
-		showDialog(cased);
-		cased.querySelector('.dlg-close').focus({ preventScroll: true });
-	}
-	cased.querySelector('.dlg-close').addEventListener('click', function () { hideDialog(cased); });
-	cased.querySelector('.case-prev').addEventListener('click', function () { caseVideo.pause(); fillCase(caseAt - 1); });
-	cased.querySelector('.case-next').addEventListener('click', function () { caseVideo.pause(); fillCase(caseAt + 1); });
-	cased.querySelector('.case-goto').addEventListener('click', function (e) {
-		e.preventDefault();
-		var s = work[caseAt];
-		hideDialog(cased); hideDialog(gallery);
-		if (walk.goTo) walk.goTo(s); else s.scrollIntoView();
-	});
-	cased.addEventListener('close', function () { unload(caseVideo); dialogClosed(); });
-
-	// Selected work: every project as a card, filtered by kind of work.
-	var gallery = document.querySelector('.gallery');
-	var grid = gallery.querySelector('.gallery-grid');
-	var filters = gallery.querySelector('.filters');
-	var PLAY = '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>';
-	var cards = work.map(function (s) {
-		var li = document.createElement('li');
-		li.setAttribute('data-category', s.getAttribute('data-category') || '');
-		var a = document.createElement('a');
-		a.className = 'card';
-		a.href = '#' + s.id;
-		a.innerHTML = '<span class="card-media"><img alt="" loading="lazy" decoding="async" /><span class="card-play">' + PLAY + '</span></span>' +
-			'<p class="eyebrow"></p><h3></h3><p class="card-desc"></p>';
-		a.querySelector('img').src = s.getAttribute('data-poster');
-		a.querySelector('.eyebrow').textContent = text(s, '.exhibit-info .eyebrow');
-		a.querySelector('h3').textContent = text(s, 'h2');
-		a.querySelector('.card-desc').textContent = text(s, '.exhibit-desc');
-		a.addEventListener('click', function (e) { e.preventDefault(); openCase(s); });
-		li.appendChild(a);
-		grid.appendChild(li);
-		return li;
-	});
-	CATS.forEach(function (c) {
-		var n = c.key ? cards.filter(function (li) { return li.getAttribute('data-category').split(' ').indexOf(c.key) >= 0; }).length : cards.length;
-		if (!n) return;
-		var b = document.createElement('button');
-		b.type = 'button';
-		b.setAttribute('aria-pressed', c.key ? 'false' : 'true');
-		b.innerHTML = c.label + '<sup>' + n + '</sup>';
-		b.addEventListener('click', function () {
-			[].forEach.call(filters.children, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-			cards.forEach(function (li) { li.hidden = !!c.key && li.getAttribute('data-category').split(' ').indexOf(c.key) < 0; });
-		});
-		filters.appendChild(b);
-	});
-	function openGallery() {
-		showDialog(gallery);
-		gallery.querySelector('.dlg-close').focus({ preventScroll: true });
-	}
-	gallery.querySelector('.dlg-close').addEventListener('click', function () { hideDialog(gallery); });
-	gallery.addEventListener('close', dialogClosed);
-	[].forEach.call(document.querySelectorAll('.js-work'), function (a) {
-		a.addEventListener('click', function (e) { e.preventDefault(); openGallery(); });
-	});
-	if (location.hash === '#work') setTimeout(openGallery, 0);
-
-	// every exhibit: the play buttons open the full video, Project details opens the case
-	projects.forEach(function (s) {
-		[].forEach.call(s.querySelectorAll('.watch'), function (b) { b.addEventListener('click', function () { openPlayer(s); }); });
-		var c = s.querySelector('.case-open');
-		if (c) c.addEventListener('click', function () { openCase(s); });
+	player.querySelector('.player-close').addEventListener('click', closePlayer);
+	player.addEventListener('click', function (e) { if (e.target === player) closePlayer(); });
+	player.addEventListener('close', function () { playerVideo.pause(); if (playerHooks.close) playerHooks.close(); });
+	stops.forEach(function (s) {
+		var b = s.querySelector('.watch');
+		if (b) b.addEventListener('click', function () { openPlayer(s); });
 	});
 
 	if (!root.classList.contains('is-3d') || !window.THREE) { lite(); return; }
 
-	/* ---------- Lite mode: a plain page with the clips inline ---------- */
+	/* ---------- Lite mode: inline clips ---------- */
 
 	function lite() {
 		root.classList.remove('is-3d');
 		root.classList.add('is-lite');
-		// one clip plays at a time, the one most in view; reduced motion keeps the posters still
-		var shown = [], playing = null;
-		function pick() {
-			var best = null, bestR = 0.35;
-			shown.forEach(function (v) { if (v._ratio > bestR) { bestR = v._ratio; best = v; } });
-			if (best === playing) return;
-			if (playing) playing.pause();
-			playing = best;
-			if (best) {
-				if (!best.getAttribute('src')) best.src = best.getAttribute('data-src');
-				best.play().catch(function () {});
-			}
-		}
-		var io = !reduced && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+		var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
 			es.forEach(function (e) {
-				var v = e.target._video;
-				v._ratio = e.isIntersecting ? e.intersectionRatio : 0;
-				if (shown.indexOf(v) < 0) shown.push(v);
+				var v = e.target;
+				if (e.isIntersecting) { if (!v.src) v.src = v.getAttribute('data-src'); v.play().catch(function () {}); }
+				else v.pause();
 			});
-			pick();
-		}, { threshold: [0, 0.35, 0.6, 0.85] }) : null;
-		projects.forEach(function (s) {
-			var fig = s.querySelector('.exhibit-media'), clip = s.getAttribute('data-video');
-			if (!fig) return;
-			fig.addEventListener('click', function (e) { if (!e.target.closest('button')) openPlayer(s); });
-			if (!clip || !io) return;
+		}, { threshold: 0.4 }) : null;
+		stops.forEach(function (s) {
+			var clip = s.getAttribute('data-video');
+			if (!clip) return;
+			var fig = document.createElement('figure');
+			fig.className = 'lite-media';
+			fig.style.margin = '0';
 			var v = document.createElement('video');
 			v.muted = true; v.loop = true; v.playsInline = true;
-			v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
+			v.setAttribute('playsinline', '');
 			v.preload = 'none';
+			v.poster = s.getAttribute('data-poster');
 			v.setAttribute('data-src', clip);
-			v.addEventListener('playing', function () { v.classList.add('is-on'); });
-			fig.insertBefore(v, fig.querySelector('.exhibit-play'));
-			fig._video = v;
-			io.observe(fig);
+			v.addEventListener('click', function () { openPlayer(s); });
+			fig.appendChild(v);
+			s.insertBefore(fig, s.firstChild);
+			if (io) io.observe(v); else v.src = clip;
 		});
 	}
 
@@ -237,9 +104,9 @@
 	host.appendChild(renderer.domElement);
 
 	var scene = new THREE.Scene();
-	var bg = new THREE.Color(0x090d14);
+	var bg = new THREE.Color(0x0b0b10);
 	scene.background = bg;
-	scene.fog = new THREE.Fog(0x090d14, 12, 36);
+	scene.fog = new THREE.Fog(0x0b0b10, 12, 36);
 	var camera = new THREE.PerspectiveCamera(36, 1, 0.25, 140);
 
 	var hemi = new THREE.HemisphereLight(0xffffff, 0x1a1a24, 0.5);
@@ -259,46 +126,35 @@
 		try {
 			composer = new THREE.EffectComposer(renderer);
 			composer.addPass(new THREE.RenderPass(scene, camera));
-			bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.55, 0.8);
+			bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.55, 0.78);
 			composer.addPass(bloom);
 			composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
 		} catch (e) { composer = null; }
 	}
 
 	function C(hex) { return new THREE.Color(hex); }
-	// the render is gamma corrected at the end, so a colour meant to show as is goes in linear
-	function L(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }
-	// a project's own colour, taken partway down so each room stays dark around its footage
-	function D(hex) { return C(hex).lerp(L(hex), 0.45); }
 
-	// Per-stop mood: background/fog colour and the LED floor colour. Each
-	// chapter gate has its own light, so the five chapters read apart.
+	// Per-stop mood: background/fog colour and the LED floor colour.
 	var MOOD = {
-		intro:   { bg: L(0x0d131d), led: C(0xc4ece6) },
-		gate:    { bg: L(0x0f141d), led: C(0xfff1de) },
-		gate2017: { bg: L(0x10151e), led: C(0xf2cfae) },
-		gate2020: { bg: L(0x0e1224), led: C(0x9aacff) },
-		gate2022: { bg: L(0x16141a), led: C(0xf0c896) },
-		gate2023: { bg: L(0x0a1a22), led: C(0x61d9cc) },
-		gate2025: { bg: L(0x151126), led: C(0xc8a8ff) },
-		gate2026: { bg: L(0x0b1826), led: C(0x9fdcff) },
-		court:   { bg: D(0x1b0a33), led: C(0xff3fb4) },
-		water:   { bg: D(0x06131c), led: C(0x9fe6ff) },
-		forest:  { bg: D(0x07190f), led: C(0x58f08a) },
-		tryon:   { bg: D(0x061719), led: C(0x3fe0e0) },
-		bowling: { bg: D(0x050e28), led: C(0x4a86ff) },
-		tennis:  { bg: D(0x06180f), led: C(0xd8ff4a) },
-		shadow:  { bg: D(0x0e0d0c), led: C(0xf1e6d2) },
-		fireworks: { bg: D(0x0a0618), led: C(0xff6ad5) },
-		city:    { bg: D(0x041416), led: C(0x3ff0c8) },
-		mr:      { bg: D(0x140d08), led: C(0xffb35c) },
-		galaxy:  { bg: D(0x03060f), led: C(0x56b8ff) },
-		anatomy: { bg: D(0x150c10), led: C(0xff7a85) },
-		road:    { bg: D(0x0d2034), led: C(0xffa23a) },
-		drift:   { bg: D(0x140b22), led: C(0xb27bff) },
-		shooter: { bg: D(0x1c0b05), led: C(0xff5a1a) },
-		about:   { bg: L(0x14131a), led: C(0xf3d6ba) },
-		contact: { bg: L(0x0d131d), led: C(0xc4ece6) }
+		intro:   { bg: C(0x0c0c11), led: C(0xd9dbe6) },
+		gate:    { bg: C(0x0d0c10), led: C(0xfff1de) },
+		court:   { bg: C(0x1b0a33), led: C(0xff3fb4) },
+		water:   { bg: C(0x06131c), led: C(0x9fe6ff) },
+		forest:  { bg: C(0x07190f), led: C(0x58f08a) },
+		tryon:   { bg: C(0x061719), led: C(0x3fe0e0) },
+		bowling: { bg: C(0x050e28), led: C(0x4a86ff) },
+		tennis:  { bg: C(0x06180f), led: C(0xd8ff4a) },
+		shadow:  { bg: C(0x0e0d0c), led: C(0xf1e6d2) },
+		fireworks: { bg: C(0x0a0618), led: C(0xff6ad5) },
+		city:    { bg: C(0x041416), led: C(0x3ff0c8) },
+		mr:      { bg: C(0x140d08), led: C(0xffb35c) },
+		galaxy:  { bg: C(0x03060f), led: C(0x56b8ff) },
+		anatomy: { bg: C(0x150c10), led: C(0xff7a85) },
+		road:    { bg: C(0x0d2034), led: C(0xffa23a) },
+		drift:   { bg: C(0x140b22), led: C(0xb27bff) },
+		shooter: { bg: C(0x1c0b05), led: C(0xff5a1a) },
+		about:   { bg: C(0x131010), led: C(0xffdcb4) },
+		contact: { bg: C(0x0b0b10), led: C(0xe8e8ff) }
 	};
 
 	var kinds = stops.map(function (s) { return s.getAttribute('data-scene'); });
@@ -702,15 +558,6 @@
 		var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
 		return { c: c, g: c.getContext('2d'), t: t };
 	}
-	// canvas text is drawn now and again once the display font has loaded
-	var fontWaiters = [];
-	function onFont(draw) { draw(); if (fontWaiters) fontWaiters.push(draw); }
-	if (document.fonts && document.fonts.load) {
-		Promise.all([document.fonts.load('500 64px "Space Grotesk"'), document.fonts.load('700 64px "Space Grotesk"')]).then(function () {
-			var w = fontWaiters; fontWaiters = null;
-			w.forEach(function (f) { f(); });
-		}).catch(function () {});
-	}
 	var glowTex = radialTex('rgba(255,255,255,1)', 'rgba(255,255,255,0)');
 	function std(color, opts) {
 		var o = { color: color, roughness: 0.55, metalness: 0.1 };
@@ -807,8 +654,6 @@
 		grp.position.set(pathX(s0), 0, s0);
 		scene.add(grp);
 		var st = { i: i, kind: kind, s: s0, group: grp, life: 0, rise: true, update: function () {} };
-		var year = stop.getAttribute('data-gate-year');
-		st.mood = MOOD[kind + (year || '')] || MOOD[kind] || MOOD.intro;
 		var hasVideo = !!stop.getAttribute('data-video');
 		if (hasVideo && kind !== 'forest') {
 			var ar = (stop.getAttribute('data-ar') || '16/9').split('/');
@@ -822,7 +667,7 @@
 			grp.add(scr);
 			st.screen = scr;
 		}
-		var B = kind === 'gate' && year === '2017' ? BUILD.portal : BUILD[kind];
+		var B = BUILD[kind];
 		if (B) B(st, grp, stop);
 		stations.push(st);
 		return st;
@@ -839,45 +684,39 @@
 		spot.rotation.x = -Math.PI / 2; spot.position.y = 0.008;
 		scene.add(spot);
 		st.update = function (t, life) {
-			ring.material.opacity = 0.18 * life * (0.6 + 0.4 * Math.sin(t * 2));
+			ring.material.opacity = 0.4 * life * (0.6 + 0.4 * Math.sin(t * 2));
 			ring.position.set(person.position.x, 0.01, person.position.z);
 			spot.position.set(person.position.x, 0.008, person.position.z);
-			spot.material.opacity = life * 0.4;
+			spot.material.opacity = life * 0.6;
 			var sc = 1 + 0.05 * Math.sin(t * 2); ring.scale.set(sc, sc, sc);
 		};
 	};
 
-	// Chapter gate: a slim frame of light across the path in the chapter's
-	// colour, its name above it and the year written into the floor behind.
+	// Milestone gate: an LED portal across the path with the year and the
+	// place, and the year written into the floor behind it.
 	BUILD.gate = function (st, grp, stop) {
 		st.rise = false;
 		var year = stop.getAttribute('data-gate-year'), label = stop.getAttribute('data-gate-label') || '';
-		var col = st.mood.led.clone().lerp(new THREE.Color(1, 1, 1), 0.3), css = '#' + col.getHexString();
-		var W = 3.8, H = 3.0, T = 0.05;
-		var barMat = new THREE.MeshBasicMaterial({ color: col.clone() });
+		var W = 3.8, H = 3.0, T = 0.06;
+		var barMat = new THREE.MeshBasicMaterial({ color: 0xfff3e0 });
 		var gate = new THREE.Group();
 		gate.position.z = -2.2;
 		[[-W / 2, H / 2, T, H], [W / 2, H / 2, T, H], [0, H, W + T, T]].forEach(function (b) {
 			var m = new THREE.Mesh(new THREE.BoxBufferGeometry(b[2], b[3], T), barMat);
 			m.position.set(b[0], b[1], 0); gate.add(m);
 		});
-		var lbl = textTex(1024, 128), yt = textTex(1024, 400);
-		onFont(function () {
-			var g = lbl.g; g.clearRect(0, 0, 1024, 128);
-			g.fillStyle = css; g.textAlign = 'center'; g.textBaseline = 'middle';
-			if ('letterSpacing' in g) g.letterSpacing = '9px';
-			var txt = (year + '  ·  ' + label).toUpperCase();
-			g.font = '500 52px "Space Grotesk", Arial, sans-serif';
-			g.font = '500 ' + Math.min(52, Math.floor(52 * 960 / g.measureText(txt).width)) + 'px "Space Grotesk", Arial, sans-serif';
-			g.fillText(txt, 512, 66); lbl.t.needsUpdate = true;
-			var y = yt.g; y.clearRect(0, 0, 1024, 400);
-			y.fillStyle = '#fff'; y.font = '500 330px "Space Grotesk", Arial, sans-serif'; y.textAlign = 'center'; y.textBaseline = 'middle';
-			y.fillText(year, 512, 214); yt.t.needsUpdate = true;
-		});
+		var lbl = textTex(1024, 128);
+		var g = lbl.g; g.fillStyle = '#fff3e0'; g.font = '700 64px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+		var txt = (year + '   ' + label).toUpperCase();
+		g.font = '700 ' + Math.min(64, Math.floor(64 * 980 / g.measureText(txt).width)) + 'px Archivo, Arial, sans-serif';
+		g.fillText(txt, 512, 68); lbl.t.needsUpdate = true;
 		var plate = new THREE.Mesh(new THREE.PlaneBufferGeometry(3.6, 0.45), new THREE.MeshBasicMaterial({ map: lbl.t, transparent: true, depthWrite: false }));
 		plate.position.set(0, H + 0.34, 0); gate.add(plate);
 		grp.add(gate);
-		var floorYear = new THREE.Mesh(new THREE.PlaneBufferGeometry(6.4, 2.5), new THREE.MeshBasicMaterial({ map: yt.t, color: col.clone(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 }));
+		var yt = textTex(1024, 400);
+		var y = yt.g; y.fillStyle = '#fff'; y.font = '800 330px Archivo, Arial, sans-serif'; y.textAlign = 'center'; y.textBaseline = 'middle';
+		y.fillText(year, 512, 214); yt.t.needsUpdate = true;
+		var floorYear = new THREE.Mesh(new THREE.PlaneBufferGeometry(6.4, 2.5), new THREE.MeshBasicMaterial({ map: yt.t, color: 0xfff1de, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 }));
 		floorYear.rotation.x = -Math.PI / 2;
 		floorYear.position.set(0.2, 0.012, -4.9);
 		grp.add(floorYear);
@@ -885,77 +724,9 @@
 			var k = smooth(0, 0.6, life);
 			gate.scale.set(1, Math.max(0.001, easeOut(k)), 1);
 			gate.visible = k > 0.003;
-			barMat.color.copy(col).multiplyScalar(0.4 + 0.9 * k);
+			barMat.color.setRGB(1, 0.95, 0.88).multiplyScalar(0.4 + 0.9 * k);
 			plate.material.opacity = smooth(0.4, 0.9, life);
-			floorYear.material.opacity = 0.5 * smooth(0.3, 1, life);
-		};
-	};
-
-	// 2017, the portal: a tall lit doorway where the walk begins, a dusk sky
-	// over the city glowing inside it. The opening shot looks past Burhan at
-	// it; he walks up to it and steps out through it into the first chapter.
-	var heroPortal = new THREE.Vector3(0, 2, 10);
-	BUILD.portal = function (st, grp) {
-		st.rise = false; st.portal = true;
-		var W = 2.6, H = 5.0, Z = -2.2;
-		var P = new THREE.Group(); P.position.z = Z; grp.add(P);
-		heroPortal.set(grp.position.x, H * 0.45, grp.position.z + Z);
-
-		var sky = textTex(256, 512), g = sky.g;
-		var gr = g.createLinearGradient(0, 0, 0, 512);
-		gr.addColorStop(0, '#0e2333'); gr.addColorStop(0.3, '#285f6c'); gr.addColorStop(0.58, '#a3d9d1');
-		gr.addColorStop(0.76, '#f1d8bd'); gr.addColorStop(0.88, '#f0b98f'); gr.addColorStop(1, '#fff0df');
-		g.fillStyle = gr; g.fillRect(0, 0, 256, 512);
-		var hz = g.createRadialGradient(128, 440, 0, 128, 440, 210);
-		hz.addColorStop(0, 'rgba(255,246,232,0.85)'); hz.addColorStop(1, 'rgba(255,246,232,0)');
-		g.fillStyle = hz; g.fillRect(0, 0, 256, 512);
-		// a low skyline against the glow, one tower rising over the rest
-		var seed = 11;
-		function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
-		g.fillStyle = 'rgba(16,30,44,0.78)';
-		for (var x = -4; x < 260;) { var bw = 7 + rnd() * 15, bh = 14 + rnd() * 52; g.fillRect(x, 468 - bh, bw + 0.5, bh + 44); x += bw; }
-		g.fillRect(166, 318, 9, 194); g.fillRect(162.5, 360, 16, 152); g.fillRect(158, 404, 25, 108); g.fillRect(169.5, 262, 2, 58);
-		g.fillStyle = 'rgba(255,214,170,0.55)';
-		for (var j = 0; j < 70; j++) g.fillRect(Math.floor(rnd() * 256), 430 + Math.floor(rnd() * 70), 1.5, 1.5);
-		sky.t.needsUpdate = true;
-		var lightMat = new THREE.MeshBasicMaterial({ map: sky.t, transparent: true, opacity: 0, side: THREE.DoubleSide, fog: false, depthWrite: false });
-		var light = new THREE.Mesh(new THREE.PlaneBufferGeometry(W, H), lightMat);
-		light.position.y = H / 2; P.add(light);
-
-		var edgeCol = new THREE.Color(0.8, 1.0, 0.96), edgeMat = new THREE.MeshBasicMaterial({ color: edgeCol.clone(), fog: false });
-		[[-W / 2, H / 2, 0.035, H], [W / 2, H / 2, 0.035, H], [0, H, W + 0.035, 0.035], [0, 0.006, W, 0.012]].forEach(function (b) {
-			var m = new THREE.Mesh(new THREE.BoxBufferGeometry(b[2], b[3], 0.035), edgeMat);
-			m.position.set(b[0], b[1], 0); P.add(m);
-		});
-		// the stone around the opening, and a slab standing further off (none on the side the camera swings through)
-		var stone = std(0x121a24, { roughness: 0.45, metalness: 0.6 });
-		[-1, 1].forEach(function (sd) {
-			var p = new THREE.Mesh(new THREE.BoxBufferGeometry(0.6, H + 0.6, 0.8), stone);
-			p.position.set(sd * (W / 2 + 0.3), (H + 0.6) / 2, 0); P.add(p);
-		});
-		var lintel = new THREE.Mesh(new THREE.BoxBufferGeometry(W + 1.2, 0.6, 0.8), stone);
-		lintel.position.set(0, H + 0.3, 0); P.add(lintel);
-		[[5.0, 3.4, -0.35, 7.4]].forEach(function (m) {
-			var slab = new THREE.Mesh(new THREE.BoxBufferGeometry(1.0, m[3], 0.4), stone);
-			slab.position.set(m[0], m[3] / 2, m[1]); slab.rotation.y = m[2]; P.add(slab);
-		});
-		// light spilling onto the floor, mostly on the side he approaches from
-		var poolMat = new THREE.MeshBasicMaterial({ map: glowTex, color: 0x000000, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-		var pool = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), poolMat);
-		pool.rotation.x = -Math.PI / 2; pool.scale.set(4.4, 11, 1); pool.position.set(0, 0.014, -3.2); P.add(pool);
-		var pool2 = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), poolMat);
-		pool2.rotation.x = -Math.PI / 2; pool2.scale.set(3.4, 3.6, 1); pool2.position.set(0, 0.013, 1.2); P.add(pool2);
-		var lamp = new THREE.PointLight(0xffe7d0, 0, 13, 2);
-		lamp.position.set(0, 2.4, -0.9); P.add(lamp);
-		lamp.layers.enable(1);
-		st.update = function (t, life) {
-			var k = smooth(0, 0.7, life);
-			P.visible = k > 0.003;
-			lightMat.opacity = 0.95 * k;
-			lightMat.color.setScalar(0.9 + 0.25 * k + 0.03 * Math.sin(t * 0.7));
-			edgeMat.color.copy(edgeCol).multiplyScalar(0.3 + 1.3 * k);
-			poolMat.color.setRGB(0.95, 0.76, 0.58).multiplyScalar(0.42 * k);
-			lamp.intensity = 1.7 * k;
+			floorYear.material.opacity = 0.55 * smooth(0.3, 1, life);
 		};
 	};
 
@@ -1005,15 +776,15 @@
 		function drawScore() {
 			var g = score.g; g.clearRect(0, 0, 512, 256);
 			g.textAlign = 'center'; g.textBaseline = 'middle';
-			g.fillStyle = 'rgba(255,255,255,0.7)'; g.font = '600 30px "Space Grotesk", Arial, sans-serif'; g.fillText('AIR HOCKEY', 256, 30);
+			g.fillStyle = 'rgba(255,255,255,0.7)'; g.font = '600 30px Archivo, Arial, sans-serif'; g.fillText('AIR HOCKEY', 256, 30);
 			g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(40, 58, 432, 2);
-			g.font = '700 150px "Space Grotesk", Arial, sans-serif';
+			g.font = '800 150px Archivo, Arial, sans-serif';
 			g.fillStyle = '#7aa6ff'; g.fillText(String(pts[0]), 150, 160);
 			g.fillStyle = '#ff6ccb'; g.fillText(String(pts[1]), 362, 160);
 			g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(250, 132, 12, 12); g.fillRect(250, 176, 12, 12);
 			score.t.needsUpdate = true;
 		}
-		onFont(drawScore);
+		drawScore();
 
 		var P = { u: 0, v: 0, vu: -2.6, vv: 1.2 }, serveAt = 0, goalT = -9, goalK = 0, fxT = 0;
 		function burst(u, v, col, n, sp) {
@@ -1273,16 +1044,16 @@
 		mirror.scale.x = -1;
 		mirror.position.set(0, 1.35, 0.055); kiosk.add(mirror);
 		var ui = textTex(256, 444);
-		onFont(function () {
-			var g = ui.g; g.clearRect(0, 0, 256, 444); g.strokeStyle = '#3fe0e0'; g.lineWidth = 6; g.strokeRect(10, 10, 236, 424);
+		(function () {
+			var g = ui.g; g.strokeStyle = '#3fe0e0'; g.lineWidth = 6; g.strokeRect(10, 10, 236, 424);
 			g.fillStyle = 'rgba(63,224,224,0.9)'; g.fillRect(10, 10, 236, 8);
-			g.font = '600 18px "Space Grotesk", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+			g.font = '600 18px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
 			['Choose glasses', 'Take a photo'].forEach(function (l, i) {
 				var x = 18 + i * 116; g.fillStyle = 'rgba(10,30,32,0.85)'; g.fillRect(x, 384, 104, 36);
 				g.fillStyle = '#e8ffff'; g.fillText(l, x + 52, 402);
 			});
-			ui.t.needsUpdate = true;
-		});
+		})();
+		ui.t.needsUpdate = true;
 		var uiMesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.95, 1.65), new THREE.MeshBasicMaterial({ map: ui.t, transparent: true, fog: false }));
 		uiMesh.position.set(0, 1.35, 0.058); kiosk.add(uiMesh);
 		st.update = function (t, life) {
@@ -1432,11 +1203,8 @@
 		wall.position.set(-0.9, 1.6, -8.4); wall.rotation.y = 0.18;
 		grp.add(wall);
 		var logo = textTex(1024, 256), g = logo.g;
-		onFont(function () {
-			g.clearRect(0, 0, 1024, 256);
-			g.fillStyle = '#111'; g.font = '700 170px "Space Grotesk", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-			g.fillText('BOSS', 512, 136); logo.t.needsUpdate = true;
-		});
+		g.fillStyle = '#111'; g.font = '800 170px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+		g.fillText('BOSS', 512, 136); logo.t.needsUpdate = true;
 		var mark = new THREE.Mesh(new THREE.PlaneBufferGeometry(1.4, 0.35), new THREE.MeshBasicMaterial({ map: logo.t, transparent: true, depthWrite: false }));
 		mark.position.set(0, 1.25, 0.01); wall.add(mark);
 		var n = coarse ? 700 : 1600, pos = new Float32Array(n * 3), home = new Float32Array(n * 2);
@@ -1957,7 +1725,7 @@
 				_c.copy(out).add(grp.position).project(camera);
 				var ok = Math.abs(_c.x) < 0.88 && _c.y < 0.55 && _c.y > (mobile ? -0.05 : -0.5);
 				if (ok && rect && _c.x > rect[0] - 0.05 && _c.x < rect[1] + 0.05 && _c.y > rect[2] - 0.05 && _c.y < rect[3] + 0.05) ok = false;
-				if (ok && !mobile && _c.x < (lastEx > 0.5 ? 0.3 : -0.2)) ok = false;
+				if (ok && !mobile && _c.x < -0.2) ok = false;
 				if (ok && Math.abs(_c.x - px) < (mobile ? 0.3 : 0.12) && _c.y < 0.2) ok = false;
 				if (ok) return out;
 				if (!best) best = out.clone();
@@ -2541,15 +2309,12 @@
 	BUILD.contact = function (st, grp) {
 		st.rise = false;
 		var tx = textTex(1024, 256);
-		onFont(function () {
-			var g = tx.g; g.clearRect(0, 0, 1024, 256);
-			g.fillStyle = '#fff'; g.font = '700 190px "Space Grotesk", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-			g.fillText('HELLO', 512, 136); tx.t.needsUpdate = true;
-		});
+		var g = tx.g; g.fillStyle = '#fff'; g.font = '800 190px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+		g.fillText('HELLO', 512, 136); tx.t.needsUpdate = true;
 		var m = new THREE.Mesh(new THREE.PlaneBufferGeometry(4.4, 1.1), new THREE.MeshBasicMaterial({ map: tx.t, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, fog: false }));
 		m.rotation.x = -Math.PI / 2; m.position.set(0.3, 0.02, 2.6);
 		grp.add(m);
-		st.update = function (t, life) { m.visible = !mobile; m.material.opacity = smooth(0.4, 1, life) * (0.75 + 0.25 * Math.sin(t * 2.4)); };
+		st.update = function (t, life) { m.material.opacity = smooth(0.4, 1, life) * (0.75 + 0.25 * Math.sin(t * 2.4)); };
 	};
 
 	stops.forEach(function (s, i) { station(i, kinds[i], s); });
@@ -2578,12 +2343,7 @@
 		}
 		return END;
 	}
-	function jumpTo(i, smooth) {
-		setPlaying(false);
-		window.scrollTo({ top: anchors[i], behavior: smooth ? 'smooth' : 'auto' });
-	}
-	[].forEach.call(document.querySelectorAll('a[href^="#"]'), function (a) {
-		if (a.closest('dialog') || a.classList.contains('js-work') || a.classList.contains('js-explore')) return;
+	document.querySelectorAll('a[href^="#"]').forEach(function (a) {
 		a.addEventListener('click', function (e) {
 			var id = a.getAttribute('href').slice(1);
 			var el = id ? document.getElementById(id) : null;
@@ -2592,36 +2352,23 @@
 			if (i < 0) i = stops.indexOf(el.nextElementSibling);
 			if (i < 0) return;
 			e.preventDefault();
-			jumpTo(i, true);
+			setPlaying(false);
+			window.scrollTo({ top: anchors[i], behavior: 'smooth' });
 		});
 	});
-	// from the gallery or a project's details: land just short of it and walk up to it
-	walk.goTo = function (stopEl) {
-		var i = stops.indexOf(stopEl);
-		if (i < 0) return;
-		setPlaying(false);
-		window.scrollTo(0, Math.round(sToScroll(Math.max(0, stopS(i) - S * 0.55))));
-		requestAnimationFrame(function () { window.scrollTo({ top: anchors[i], behavior: 'smooth' }); });
-	};
 
 	/* ---------- Clicks in the world ---------- */
 
 	document.querySelector('.stops').addEventListener('click', worldClick);
-	// hidden monitors still take part in raycasts, so skip them
-	function screenHit() {
-		ray.setFromCamera(mouse, camera);
-		var hits = ray.intersectObjects(screens, false);
-		for (var k = 0; k < hits.length; k++) {
-			var o = hits[k].object;
-			if (o.parent && o.parent.visible && stations[o.userData.index] && stations[o.userData.index].life > 0.5) return o;
-		}
-		return null;
-	}
 	function worldClick(e) {
 		if (e.target.closest && e.target.closest('a, button, .panel > *')) return;
 		setPointer(e);
-		var hit = screenHit();
-		if (hit) { openPlayer(hit.userData.stop); return; }
+		ray.setFromCamera(mouse, camera);
+		var hits = ray.intersectObjects(screens, false);
+		if (hits.length) {
+			var s = hits[0].object.userData;
+			if (stations[s.index] && stations[s.index].life > 0.5) { openPlayer(s.stop); return; }
+		}
 		var near = nearest();
 		if (near && near.onClick) near.onClick();
 		if (ray.ray.intersectPlane(floorPlane, mouseFloor)) addRipple(mouseFloor.x, mouseFloor.z, 1.3);
@@ -2633,49 +2380,37 @@
 	}
 	var hoverCheck = 0;
 	function updateHover() {
-		document.body.style.cursor = screenHit() ? 'pointer' : '';
+		ray.setFromCamera(mouse, camera);
+		var hits = ray.intersectObjects(screens, false);
+		var over = hits.length && stations[hits[0].object.userData.index].life > 0.5;
+		document.body.style.cursor = over ? 'pointer' : '';
 	}
 
-	/* ---------- Timeline ticks: the five chapters ---------- */
+	/* ---------- Timeline ticks ---------- */
 
 	var ticksEl = document.querySelector('.track-ticks');
 	var ticks = [];
 	stops.forEach(function (s, i) {
-		if (!s.hasAttribute('data-gate-year')) return;
-		var y = s.getAttribute('data-tick'), el = document.createElement('i');
-		el.className = 'track-tick' + (y ? '' : ' is-minor');
+		var y = s.getAttribute('data-gate-year');
+		if (!y) return;
+		var el = document.createElement('i');
+		el.className = 'track-tick';
 		el.style.left = (stopS(i) / END * 100) + '%';
-		if (y) {
-			el.innerHTML = '<span class="t-year"></span><span class="t-name"></span>';
-			el.firstChild.textContent = y;
-			el.lastChild.textContent = s.getAttribute('data-gate-label') || '';
-		}
+		el.innerHTML = '<span>' + y + '</span>';
 		ticksEl.appendChild(el);
-		ticks.push({ el: el, s: stopS(i), major: !!y, chapter: s.getAttribute('data-chapter') });
+		ticks.push({ el: el, s: stopS(i) });
 	});
-	var majors = ticks.filter(function (tk) { return tk.major; });
-	// on a narrow track, drop labels that would collide; the chapter he is in keeps its name
+	// on a narrow track, drop a year label that would collide with the one before it
 	function spaceTicks() {
-		var w = ticksEl.clientWidth, lastYear = -1e9, last = null;
-		majors.forEach(function (tk) {
-			var x = tk.s / END * w, yr = tk.el.firstChild, nm = tk.el.lastChild;
-			var hide = x - lastYear < 34;
-			yr.style.visibility = hide ? 'hidden' : '';
-			if (!hide) lastYear = x;
-			tk.x = x; tk.nw = nm.offsetWidth;
-			nm.style.visibility = '';
-		});
-		majors.forEach(function (tk) {
-			if (!tk.nw) return;
-			if (last && tk.x - tk.nw / 2 < last.x + last.nw / 2 + 14) {
-				if (tk.here) { last.el.lastChild.style.visibility = 'hidden'; last = tk; }
-				else tk.el.lastChild.style.visibility = 'hidden';
-			} else last = tk;
+		var w = ticksEl.clientWidth, last = -1e9;
+		ticks.forEach(function (tk) {
+			var x = tk.s / END * w, hide = x - last < 34;
+			tk.el.firstChild.style.visibility = hide ? 'hidden' : '';
+			if (!hide) last = x;
 		});
 	}
 	spaceTicks();
 	window.addEventListener('resize', spaceTicks);
-	if (document.fonts && document.fonts.ready) document.fonts.ready.then(spaceTicks);
 
 	/* ---------- Timeline: scrub it like a video, or let it play ---------- */
 
@@ -2683,9 +2418,9 @@
 	var tip = track.querySelector('.track-tip');
 	var playBtn = document.querySelector('.hud-play');
 	var tipLabels = stops.map(function (s, i) {
-		var k = kinds[i];
-		var name = k === 'intro' ? 'Start' : k === 'about' ? 'About' : k === 'contact' ? 'Contact' : (s.getAttribute('data-gate-label') || text(s, 'h2'));
-		return { year: s.getAttribute('data-year') || '', name: name };
+		var k = kinds[i], h = s.querySelector('h2');
+		var name = k === 'intro' ? 'Start' : k === 'about' ? 'About' : k === 'contact' ? 'Contact' : (s.getAttribute('data-gate-label') || (h ? h.textContent : ''));
+		return { year: s.getAttribute('data-year') || '', name: name.replace(/\s+/g, ' ').trim() };
 	});
 	var scrubbing = false, lastResize = 0, tipTimer = 0;
 	window.addEventListener('resize', function () { lastResize = performance.now(); });
@@ -2758,12 +2493,9 @@
 	track.addEventListener('lostpointercapture', endScrub);
 	track.addEventListener('pointerleave', function (e) { if (!scrubbing && e.pointerType === 'mouse') hideTip(); });
 	track.addEventListener('keydown', function (e) {
-		var cur = scrollToS(window.scrollY) / S, k = e.key, to = -1, ch;
-		if (k === 'ArrowRight' || k === 'ArrowUp') to = Math.min(N - 1, Math.floor(cur + 0.05) + 1);
-		else if (k === 'ArrowLeft' || k === 'ArrowDown') to = Math.max(0, Math.ceil(cur - 0.05) - 1);
-		// a page at a time is a chapter at a time
-		else if (k === 'PageDown') { ch = majors.filter(function (tk) { return tk.s > cur * S + 0.5; })[0]; to = ch ? ch.s / S : N - 1; }
-		else if (k === 'PageUp') { ch = majors.filter(function (tk) { return tk.s < cur * S - 0.5; }).pop(); to = ch ? ch.s / S : 0; }
+		var cur = scrollToS(window.scrollY) / S, k = e.key, to = -1;
+		if (k === 'ArrowRight' || k === 'ArrowUp' || k === 'PageDown') to = Math.min(N - 1, Math.floor(cur + 0.05) + 1);
+		else if (k === 'ArrowLeft' || k === 'ArrowDown' || k === 'PageUp') to = Math.max(0, Math.ceil(cur - 0.05) - 1);
 		else if (k === 'Home') to = 0;
 		else if (k === 'End') to = N - 1;
 		if (to < 0) return;
@@ -2837,18 +2569,10 @@
 		auto.lastY = Math.round(window.scrollY);
 	}
 	playBtn.addEventListener('click', function () { setPlaying(!auto.on); });
-	// Explore my journey: he walks the whole story at an even pace; any scroll takes over
-	[].forEach.call(document.querySelectorAll('.js-explore'), function (a) {
-		a.addEventListener('click', function (e) { e.preventDefault(); setPlaying(true); });
-	});
-	walk.pause = function () {
-		auto.resume = auto.on; setPlaying(false);
-		if (exVideo) exVideo.pause();
-	};
-	walk.resume = function () {
-		if (auto.resume) { auto.resume = false; setPlaying(true); }
-		if (exVideo) exVideo.play().catch(function () {});
-	};
+	var cuePlay = document.querySelector('.cue-play');
+	if (cuePlay) cuePlay.addEventListener('click', function () { setPlaying(true); });
+	playerHooks.open = function () { auto.resume = auto.on; setPlaying(false); };
+	playerHooks.close = function () { if (auto.resume) { auto.resume = false; setPlaying(true); } };
 
 	// the user's own scrolling pauses it
 	function userScroll() { if (auto.on && !scrubbing) { auto.resume = false; setPlaying(false); } }
@@ -2866,62 +2590,21 @@
 	/* ---------- Loop ---------- */
 
 	var panels = stops.map(function (s) { return s.querySelector('.panel'); });
-	var pv = stops.map(function () { return 0; });
-	var isProject = stops.map(function (s) { return s.classList.contains('stop-project'); });
 	var hudFill = document.querySelector('.track-fill');
-	var hudName = document.querySelector('.hud-name');
-	var vignette = document.querySelector('.vignette');
-	var navLinks = {};
-	[].forEach.call(document.querySelectorAll('.nav nav a'), function (a) { navLinks[a.getAttribute('href')] = a; });
-	var lastChapter = null, lastPct = -1, lastNear = -1, lastEx = -1, lastNav = null;
+	var hudChapter = document.querySelector('.hud-chapter');
+	var lastChapter = null, lastPct = -1, lastNear = -1;
 	var charS = 0, lastStepSide = 0, lastT = performance.now();
 	var tmpColor = new THREE.Color(), led = new THREE.Color(), bgCol = new THREE.Color(), white = new THREE.Color(1, 1, 1);
-	var camRel = new THREE.Vector3(), lookRel = new THREE.Vector3(), _look = new THREE.Vector3();
-	var rig = null, rigT = {};
+	var camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), camX = 0;
+	var camSm = new THREE.Vector3(), lookSm = new THREE.Vector3(), camInit = false, _look = new THREE.Vector3();
 	var running = true;
 	var CAM_SHIFT = { intro: -0.9, about: -1.0, contact: -0.4 };
-	// on a project the camera slides so he stands near the right edge, clear of the footage and text
-	var exShift = -1.4, heroTurn = 0.2;
-	// With him at the right edge, a project's scene moves across to stand round him
-	// there instead of behind the copy (desktop only; a phone keeps the original layout).
-	var DESK_DX = { court: 2.9, tryon: 3.7, anatomy: 3.6, mr: 3.0, shadow: 1.8, water: 1.2, fireworks: 2.6, galaxy: 0.8, forest: 2.0, city: 2.6, tennis: 2.3, shooter: 1.0 };
-	var headBone = null;
 
 	function lifeTarget(st, s) {
 		var d = s - st.s;
-		if (st.portal) return Math.max(smooth(S * 0.7, S * 0.15, Math.abs(d)), 1 - smooth(S * 1.15, S * 1.6, s));
 		if (!st.rise) return smooth(S * 0.7, S * 0.15, Math.abs(d));
 		// rise as he arrives (everything is behind him by then), fade out once he has moved on
 		return smooth(-3.2, -0.4, d) * (1 - smooth(S * 0.5, S * 0.85, d));
-	}
-
-	// The exhibit on show plays its clip in the page, muted; every other one
-	// keeps its poster and lets go of its video.
-	var exVideo = null, exAt = -1;
-	function setExhibit(i) {
-		if (i === exAt) return;
-		if (exVideo) {
-			var old = exVideo;
-			old.classList.remove('is-on');
-			old.pause();
-			setTimeout(function () { if (old !== exVideo) unload(old); }, 800);
-		}
-		exAt = i; exVideo = null;
-		if (i < 0) return;
-		var fig = panels[i].querySelector('.exhibit-media'), clip = stops[i].getAttribute('data-video');
-		if (!fig || !clip) return;
-		var v = fig.querySelector('video');
-		if (!v) {
-			v = document.createElement('video');
-			v.muted = true; v.loop = true; v.playsInline = true;
-			v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
-			v.preload = 'auto';
-			v.addEventListener('playing', function () { if (v === exVideo) v.classList.add('is-on'); });
-			fig.insertBefore(v, fig.querySelector('.exhibit-play'));
-		}
-		if (!v.getAttribute('src')) v.src = clip;
-		exVideo = v;
-		if (!openDialogs) v.play().catch(function () {});
 	}
 
 	function resize() {
@@ -2933,30 +2616,15 @@
 		camera.fov = mobile ? 54 : 36;
 		if (mobile) camera.setViewOffset(w, h, 0, h * 0.2, w, h); else camera.clearViewOffset();
 		camera.updateProjectionMatrix();
-		var tanH = Math.tan(camera.fov * Math.PI / 360) * camera.aspect;
-		// him at about 80% across on a project, the portal at about 64% in the opening shot
-		exShift = 0.95 - 0.6 * 7.4 * tanH;
-		heroTurn = Math.atan(0.28 * tanH);
-		stations.forEach(function (st) { if (isProject[st.i]) st.group.position.x = pathX(st.s) + (mobile ? 0 : DESK_DX[st.kind] || 0); });
 		measure();
 	}
 	window.addEventListener('resize', resize);
 	window.addEventListener('load', measure);
 	if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
 	resize();
-	// arriving at the top of the page, he walks the last few steps up to his mark
-	var walkIn = window.scrollY < 4 && !location.hash ? { t: -1, from: -4.5, dur: 3.4 } : null;
-	charS = scrollToS(window.scrollY) + (walkIn ? walkIn.from : 0);
+	charS = scrollToS(window.scrollY);
 
 	document.addEventListener('visibilitychange', function () { running = !document.hidden; if (running) { lastT = performance.now(); requestAnimationFrame(frame); } });
-
-	// the camera rig, in polar terms round him so it can swing from behind him to in front
-	function rigTo(o, k, a, b) {
-		o.az = a.az + (b.az - a.az) * k; o.r = a.r + (b.r - a.r) * k; o.y = a.y + (b.y - a.y) * k;
-		o.rel = a.rel + (b.rel - a.rel) * k; o.pitch = a.pitch + (b.pitch - a.pitch) * k; o.L = a.L + (b.L - a.L) * k;
-		return o;
-	}
-	var rigF = {}, rigH = {}, rigX = {}, mouseSm = new THREE.Vector2(), moved = false;
 
 	function frame(now) {
 		if (!running) return;
@@ -2967,14 +2635,6 @@
 
 		if (auto.on && !scrubbing) stepAuto(dt);
 		var targetS = auto.on && !scrubbing ? auto.s : scrollToS(window.scrollY);
-		if (walkIn) {
-			// wait for him to load, then ease in and out of the walk
-			if (walkIn.t < 0 && (avatar || clock > 6)) walkIn.t = 0;
-			if (walkIn.t >= 0) walkIn.t += dt;
-			var wu = smooth(0, walkIn.dur, walkIn.t);
-			targetS += walkIn.from * (1 - wu);
-			if (walkIn.t >= walkIn.dur) walkIn = null;
-		}
 		// a jump across several stops (a nav link, a click on the timeline) skips ahead instead of sprinting
 		if (Math.abs(targetS - charS) > S * 2.5) charS = targetS - Math.sign(targetS - charS) * S * 0.9;
 		var prevS = charS;
@@ -2985,26 +2645,6 @@
 		pose.move = damp(pose.move, Math.min(1, speed / 0.9), speed > 0.05 ? 6 : 3, dt);
 		var px0 = pathX(charS);
 		var near = nearest();
-
-		// how much each stop's copy is on show, and how much a project exhibit is
-		var exK = 0, exBest = -1, exBestV = 0.5, i;
-		for (i = 0; i < N; i++) {
-			var dd = charS - stations[i].s;
-			var pvi = smooth(-S * 0.42, -S * 0.18, dd) * (1 - smooth(S * 0.22, S * 0.42, dd));
-			if (i === 0) pvi = Math.max(pvi, smooth(S * 0.3, 0, charS));
-			if (i === N - 1) pvi = Math.max(pvi, smooth(END - S * 0.3, END - 0.5, charS));
-			pv[i] = pvi;
-			if (isProject[i]) {
-				exK += smooth(S * 0.8, S * 0.3, Math.abs(dd));
-				if (pvi > exBestV) { exBestV = pvi; exBest = i; }
-			}
-		}
-		exK = mobile ? 0 : Math.min(1, exK);
-		// the camera follows him into the light, then swings round once he is through the
-		// doorway, wide of the stone, to meet him on the far side
-		var heroK = 1 - smooth(10.5, 12.2, charS);
-		var idle = pose.move < 0.1 ? 1 : 0;
-		pose.look = damp(pose.look || 0, idle * exK, 2.5, dt);
 
 		// walk cycle driven by distance so his feet stay planted, up to a brisk pace
 		pose.walkT += Math.min(Math.abs(ds), 4.2 * dt) / STRIDE * walkDur;
@@ -3019,9 +2659,6 @@
 			walkA.setEffectiveWeight(w);
 			idleA.setEffectiveWeight(1 - w);
 			mixer.update(dt);
-			// at an exhibit he glances across at the footage
-			if (!headBone) headBone = bones['mixamorigHead'] || bones['mixamorig:Head'] || null;
-			if (headBone && pose.look > 0.001) headBone.rotateY(-0.32 * pose.look);
 		}
 		// footsteps on the LED floor, on each heel strike
 		var halfIdx = Math.floor(pose.walkT / (walkDur / 2));
@@ -3040,7 +2677,7 @@
 			var d = Math.abs(st.s - charS);
 			var w = Math.max(0, 1 - d / S);
 			if (w > 0) {
-				var mm = st.mood;
+				var mm = MOOD[st.kind] || MOOD.intro;
 				tmpColor.copy(mm.bg).multiplyScalar(w); bgCol.add(tmpColor);
 				tmpColor.copy(mm.led).multiplyScalar(w); led.add(tmpColor);
 				wsum += w;
@@ -3089,7 +2726,7 @@
 		// stops
 		pose.glasses = 0;
 		stations.forEach(function (st) {
-			var vis = st.portal ? charS < st.s + S * 1.6 : Math.abs(st.s - charS) < S * 1.3 || (st.s < charS && charS - st.s < S * 1.6);
+			var vis = Math.abs(st.s - charS) < S * 1.3 || (st.s < charS && charS - st.s < S * 1.6);
 			// a stop that hasn't started rising yet draws nothing
 			st.group.visible = vis && (!st.rise || st.life > 0.003);
 			if (!vis) { if (st.hide) st.hide(); return; }
@@ -3097,11 +2734,9 @@
 			if (st.rise && st.life > 0.08 && !st.waved) { st.waved = true; floorU.uWave.value.set(person.position.x, person.position.z, t, 1); }
 			else if (st.life < 0.02) st.waved = false;
 			if (st.screen) {
-				var sc = st.screen, b = sc.userData.base, bm = sc.userData.baseM;
-				// on a desktop the footage plays large in the page, so the monitor stands down
-				var monitorOff = bm && !mobile;
-				if (b && !monitorOff) {
-					var rise = easeOut(smooth(0, 0.55, st.life));
+				var sc = st.screen, b = sc.userData.base;
+				if (b) {
+					var rise = easeOut(smooth(0, 0.55, st.life)), bm = sc.userData.baseM;
 					if (bm && mobile) {
 						sc.position.set(bm.x, bm.y - (1 - rise) * (sc.userData.h * sc.userData.mScale + 1.6), bm.z);
 						sc.scale.setScalar(sc.userData.mScale); sc.rotation.y = 0;
@@ -3111,8 +2746,7 @@
 					} else sc.position.set(b.x - (mobile ? b.x - 0.2 : 0), b.y + (mobile ? 1.5 : 0) - (1 - rise) * (sc.userData.h + 1.6), b.z);
 					sc.visible = st.life > 0.01;
 				}
-				if (monitorOff) sc.visible = false;
-				if (sc.userData.update) sc.userData.update(monitorOff ? 0 : st.life, led);
+				if (sc.userData.update) sc.userData.update(st.life, led);
 			}
 			st.update(t, st.life, dt);
 		});
@@ -3123,12 +2757,7 @@
 		var back = ds < -0.0008, fwd = ds > 0.0008;
 		if (back) pose.facing = Math.PI; else if (fwd) pose.facing = 0;
 		var want = (pose.facing || 0) + (pose.facing ? -heading : heading);
-		if (idle) {
-			want = 0.18 * Math.sin(t * 0.3) + (camera.position.x - px0) * 0.05;
-			// at the start he faces the portal; at a project he half turns toward its footage
-			if (heroK > 0) want = want * (1 - heroK) + heroK * Math.atan2(heroPortal.x - px0, heroPortal.z - charS);
-			want -= 0.42 * exK;
-		}
+		if (pose.move < 0.1) want = 0.18 * Math.sin(t * 0.3) + (camera.position.x - px0) * 0.05;
 		var dy = ((want - pose.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 		pose.yaw += dy * (1 - Math.exp(-5 * dt));
 		person.rotation.y = pose.yaw;
@@ -3140,6 +2769,7 @@
 		faceLight.position.set(px0 - 0.4, 2.0, charS + 1.6);
 		avKey.position.set(px0 + 2.4, 3.6, charS + 5.0);
 		avKey.target.position.set(px0, 1.05, charS);
+		sky.position.set(px0, 30, charS - 62);
 		glasses.visible = pose.glasses > 0.02;
 		if (glasses.visible) glasses.scale.setScalar(glasses.userData.s || (glasses.userData.s = glasses.scale.x)).multiplyScalar(Math.max(0.001, easeOut(pose.glasses)));
 		if (mirrorWanted && avatar) {
@@ -3154,80 +2784,44 @@
 			scene.background = oldBg; scene.fog = oldFog;
 		}
 
-		// camera: in front of him looking back along the path, him to the right of
-		// the copy. At the start it stands behind him instead, looking past him at
-		// the portal, and swings round as he walks up to it.
-		var shift = exK * exShift;
+		// camera: just ahead of him, slightly to his right, looking back along the path
+		var shift = 0;
 		stations.forEach(function (st) { if (CAM_SHIFT[st.kind]) shift += CAM_SHIFT[st.kind] * st.life; });
-		var fx = mobile ? 0.15 : -0.95 + shift, fy = mobile ? 2.25 : 1.8, fz = mobile ? 8.4 : 7.4, fly = mobile ? 2.0 : 1.55;
-		rigF.az = Math.atan2(fx, fz); rigF.r = Math.hypot(fx, fz); rigF.y = fy;
-		rigF.L = fz + 4; rigF.pitch = (fly - fy) / rigF.L; rigF.rel = Math.PI - rigF.az;
-		var target = rigF;
-		if (heroK > 0.001) {
-			// behind him along the line from the portal back to where he starts
-			rigH.az = Math.atan2(pathX(0) - heroPortal.x, -heroPortal.z) + (mobile ? 0.04 : 0.1);
-			if (rigH.az > rigF.az) rigH.az -= Math.PI * 2;
-			rigH.r = mobile ? 8.6 : 8.5; rigH.y = mobile ? 2.0 : 1.75;
-			// look at the portal, turned a little so it sits right of centre, clear of the headline
-			var hcx = px0 + Math.sin(rigH.az) * rigH.r, hcz = charS + Math.cos(rigH.az) * rigH.r;
-			var rel = Math.atan2(heroPortal.x - hcx, heroPortal.z - hcz) + (mobile ? 0 : heroTurn) - rigH.az;
-			while (rel > rigF.rel + Math.PI) rel -= Math.PI * 2;
-			while (rel < rigF.rel - Math.PI) rel += Math.PI * 2;
-			rigH.rel = rel; rigH.L = 12; rigH.pitch = mobile ? 0.02 : -0.02;
-			target = rigTo(rigX, heroK, rigF, rigH);
-			// through the swing it keeps the portal in shot, so the frame never empties
-			var tcx = px0 + Math.sin(rigX.az) * rigX.r, tcz = charS + Math.cos(rigX.az) * rigX.r;
-			var relP = Math.atan2(heroPortal.x - tcx, heroPortal.z - tcz) + (mobile ? 0 : heroTurn) - rigX.az;
-			while (relP > rigF.rel + Math.PI) relP -= Math.PI * 2;
-			while (relP < rigF.rel - Math.PI) relP += Math.PI * 2;
-			rigX.rel = rigF.rel + (relP - rigF.rel) * Math.min(1, heroK * 1.6);
+		camX = px0;
+		if (mobile) {
+			camPos.set(camX + 0.15, 2.25, charS + 8.4);
+			camLook.set(camX + 0.15, 2.0, charS - 4);
+		} else {
+			camPos.set(camX - 0.95 + shift, 1.8, charS + 7.4);
+			camLook.set(camX - 0.95 + shift, 1.55, charS - 4);
 		}
+		if (!coarse) { camPos.x += mouse.x * 0.3; camPos.y += mouse.y * 0.15; }
 		// smooth the framing, not the travel: the camera rides with him exactly, so a fast
 		// scroll can never let him run up into the lens or out of shot
-		var kk = 1 - Math.exp(-6 * dt);
-		if (!rig) rig = rigTo({}, 1, target, target);
-		rigTo(rig, kk, rig, target);
-		if (!coarse) mouseSm.lerp(mouse, kk);
-		var yawC = rig.az + rig.rel;
-		camRel.set(Math.sin(rig.az) * rig.r, rig.y, Math.cos(rig.az) * rig.r);
-		camRel.x -= Math.cos(yawC) * mouseSm.x * 0.3; camRel.z += Math.sin(yawC) * mouseSm.x * 0.3; camRel.y += mouseSm.y * 0.15;
-		camera.position.set(px0 + camRel.x, camRel.y, charS + camRel.z);
-		_look.set(camera.position.x + Math.sin(yawC) * rig.L, camRel.y + rig.pitch * rig.L, camera.position.z + Math.cos(yawC) * rig.L);
+		camPos.x -= px0; camPos.z -= charS; camLook.x -= px0; camLook.z -= charS;
+		camSm.lerp(camPos, 1 - Math.exp(-6 * dt)); lookSm.lerp(camLook, 1 - Math.exp(-6 * dt));
+		if (!camInit) { camSm.copy(camPos); lookSm.copy(camLook); camInit = true; }
+		camera.position.set(camSm.x + px0, camSm.y, camSm.z + charS);
+		_look.set(lookSm.x + px0, lookSm.y, lookSm.z + charS);
 		camera.lookAt(_look);
-		// the far glow hangs behind whatever the camera is looking at
-		sky.position.set(camera.position.x + Math.sin(yawC) * 69, 30, camera.position.z + Math.cos(yawC) * 69);
-		sky.rotation.y = yawC + Math.PI;
 
-		// panels, the exhibit on show, the timeline
-		for (i = 0; i < N; i++) {
-			var p = panels[i], v = Math.round(pv[i] * 100) / 100;
+		// panels and timeline
+		for (var i = 0; i < N; i++) {
+			var d = charS - stations[i].s;
+			var vis2 = smooth(-S * 0.42, -S * 0.18, d) * (1 - smooth(S * 0.22, S * 0.42, d));
+			if (i === 0) vis2 = Math.max(vis2, smooth(S * 0.3, 0, charS));
+			if (i === N - 1) vis2 = Math.max(vis2, smooth(END - S * 0.3, END - 0.5, charS));
+			var p = panels[i];
+			var v = Math.round(vis2 * 100) / 100;
 			if (p._v !== v) { p._v = v; p.style.setProperty('--vis', v); p.classList.toggle('is-off', v < 0.02); }
 		}
-		setExhibit(mobile ? -1 : exBest);
-		var ex = Math.round(exK * 100) / 100;
-		if (ex !== lastEx) { lastEx = ex; vignette.style.setProperty('--ex', ex); }
 		hudFill.style.width = (charS / END * 100).toFixed(2) + '%';
 		ticks.forEach(function (tk) { var past = charS >= tk.s - 0.5; if (tk.past !== past) { tk.past = past; tk.el.classList.toggle('is-past', past); } });
 		var ch = near ? (stops[near.i].getAttribute('data-chapter') || '') : '';
-		if (ch !== lastChapter) {
-			lastChapter = ch;
-			majors.forEach(function (tk) { var here = tk.chapter === ch; if (tk.here !== here) { tk.here = here; tk.el.classList.toggle('is-here', here); } });
-			spaceTicks();
-		}
+		if (ch !== lastChapter) { lastChapter = ch; hudChapter.textContent = ch; }
 		var pct = Math.round(charS / END * 100);
-		if (pct !== lastPct) { lastPct = Math.max(0, pct); track.setAttribute('aria-valuenow', lastPct); }
-		if (near && near.i !== lastNear) {
-			lastNear = near.i;
-			track.setAttribute('aria-valuetext', tipLabels[near.i].year + ', ' + tipLabels[near.i].name);
-			hudName.textContent = tipLabels[near.i].name;
-			var nk = near.kind, nav = nk === 'about' ? '#about' : nk === 'contact' ? '#contact' : nk === 'intro' ? null : '#journey';
-			if (nav !== lastNav) {
-				if (lastNav && navLinks[lastNav]) navLinks[lastNav].classList.remove('is-on');
-				lastNav = nav;
-				if (nav && navLinks[nav]) navLinks[nav].classList.add('is-on');
-			}
-		}
-		if (!moved && (charS > 1.2 || auto.on)) { moved = true; root.classList.add('is-moved'); }
+		if (pct !== lastPct) { lastPct = pct; track.setAttribute('aria-valuenow', pct); }
+		if (near && near.i !== lastNear) { lastNear = near.i; track.setAttribute('aria-valuetext', tipLabels[near.i].year + ', ' + tipLabels[near.i].name); }
 
 		if (composer) composer.render(dt); else renderer.render(scene, camera);
 		requestAnimationFrame(frame);
