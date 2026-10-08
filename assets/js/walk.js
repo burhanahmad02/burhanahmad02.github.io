@@ -105,7 +105,7 @@
 	var bg = new THREE.Color(0x0b0b10);
 	scene.background = bg;
 	scene.fog = new THREE.Fog(0x0b0b10, 12, 36);
-	var camera = new THREE.PerspectiveCamera(36, 1, 0.1, 140);
+	var camera = new THREE.PerspectiveCamera(36, 1, 0.25, 140);
 
 	var hemi = new THREE.HemisphereLight(0xffffff, 0x1a1a24, 0.5);
 	scene.add(hemi);
@@ -560,7 +560,8 @@
 		if (w > (opts.maxW || 5.2)) { w = opts.maxW || 5.2; h = w / ar; }
 		var poster = loader.load(stop.getAttribute('data-poster'));
 		poster.encoding = THREE.sRGBEncoding; poster.minFilter = THREE.LinearFilter; poster.generateMipmaps = false;
-		var mat = new THREE.MeshBasicMaterial({ map: poster, color: 0x222222, fog: false, side: opts.side || THREE.FrontSide });
+		// pulled forward in depth so the frame behind it never shows through (the bloom pass has a 16-bit depth buffer)
+		var mat = new THREE.MeshBasicMaterial({ map: poster, color: 0x222222, fog: false, side: opts.side || THREE.FrontSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
 		var mesh, holder = new THREE.Group();
 		if (opts.geometry) { mesh = new THREE.Mesh(opts.geometry, mat); holder.add(mesh); }
 		else {
@@ -570,7 +571,7 @@
 			var grid = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, h), new THREE.MeshBasicMaterial({ map: gridTex, transparent: true, depthWrite: false, fog: false }));
 			grid.position.z = 0.004; holder.add(grid);
 			var frame = new THREE.Mesh(new THREE.BoxBufferGeometry(w + 0.1, h + 0.1, 0.12), std(0x0b0b0d, { roughness: 0.35, metalness: 0.5 }));
-			frame.position.z = -0.07; holder.add(frame);
+			frame.position.z = -0.1; holder.add(frame);
 			[-w / 2 + 0.25, w / 2 - 0.25].forEach(function (x) {
 				var leg = new THREE.Mesh(new THREE.BoxBufferGeometry(0.08, 6, 0.08), std(0x141418, { metalness: 0.6, roughness: 0.4 }));
 				leg.position.set(x, -h / 2 - 3, -0.15); holder.add(leg);
@@ -579,7 +580,7 @@
 			glow.position.z = -0.25; holder.add(glow);
 			holder.userData.glow = glow;
 		}
-		holder.userData.h = h;
+		holder.userData.h = h; holder.userData.w = w;
 		mesh.userData.stop = stop;
 		mesh.userData.index = i;
 		var video = null, vtex = null, state = 0;
@@ -620,7 +621,7 @@
 	// through it.
 	var SCREEN_AT = {
 		court: [2.4, -6.8], water: [2.0, -6.0], tryon: [0.6, -7.2], bowling: [3.2, -9.0], tennis: [3.0, -8.6],
-		shadow: [2.2, -7.0], fireworks: [2.4, -7.4], city: [2.6, -8.2], mr: [2.6, -7.4],
+		shadow: [2.2, -7.0], fireworks: [2.4, -7.4], city: [3.4, -8.0], mr: [2.6, -7.4],
 		galaxy: [2.4, -6.8], anatomy: [2.6, -7.0], road: [2.4, -7.4], drift: [2.6, -7.6], shooter: [2.2, -7.0]
 	};
 
@@ -633,7 +634,7 @@
 		var hasVideo = !!stop.getAttribute('data-video');
 		if (hasVideo && kind !== 'forest') {
 			var at = SCREEN_AT[kind] || [2.2, -7];
-			var scr = makeScreen(stop, i, kind === 'water' ? { h: 3.3 } : kind === 'bowling' || kind === 'tennis' ? { h: 3.0 } : kind === 'anatomy' ? { h: 3.1 } : {});
+			var scr = makeScreen(stop, i, kind === 'water' ? { h: 3.3 } : kind === 'bowling' || kind === 'tennis' ? { h: 3.0 } : kind === 'anatomy' ? { h: 3.1 } : kind === 'city' ? { h: 2.5 } : {});
 			scr.userData.base = new THREE.Vector3(at[0], 1.35 + scr.userData.h / 2, at[1]);
 			scr.rotation.y = -0.08;
 			grp.add(scr);
@@ -1079,44 +1080,412 @@
 		};
 	};
 
-	// Dubai Police 360 VR: a future Dubai skyline with a shield over it.
+	// Dubai Police 360 VR: the city under its cyber shield, with threats flying in
+	// and breaking on it. The dome and the threat orbs are ports of the film's own
+	// shaders (VRCity/CityShieldDefense and CyberShield/ThreatEnergySphere).
+	var SHIELD_VS = [
+		'uniform vec3 uRad; varying vec3 vLocal; varying vec3 vN; varying vec3 vV; varying float vH;',
+		'void main(){',
+		'  vLocal = position * uRad; vH = position.y;',
+		'  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
+		'  vN = normalize(normalMatrix * normal); vV = -mv.xyz;',
+		'  gl_Position = projectionMatrix * mv;',
+		'}'
+	].join('\n');
+	var SHIELD_FS = [
+		'uniform float uTime; uniform float uLife; uniform float uReveal; uniform float uCell; uniform vec3 uRad; uniform vec4 uHole; uniform vec2 uRes;',
+		'uniform vec4 uImp[4]; uniform vec4 uImpP[4]; uniform vec4 uTgt[4];',
+		'varying vec3 vLocal; varying vec3 vN; varying vec3 vV; varying float vH;',
+		'const vec3 TEAL = vec3(0.03, 0.42, 0.46); const vec3 TOP = vec3(0.05, 0.55, 0.42); const vec3 WAVE = vec3(0.08, 0.9, 0.55);',
+		'const vec3 RED = vec3(2.6, 0.1, 0.04); const vec3 ORANGE = vec3(2.4, 0.75, 0.05); const vec3 CYAN = vec3(0.2, 2.2, 2.6);',
+		'const vec3 GREEN = vec3(0.1, 1.9, 0.75); const vec3 CORE = vec3(3.2, 1.3, 0.9);',
+		'float sq(float x){ return x * x; }',
+		'float hash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }',
+		'float noise(vec3 x){ vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);',
+		'  return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),',
+		'             mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z); }',
+		'float fbm(vec3 p){ float v = 0.5 * noise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); v += 0.25 * noise(p);',
+		'#if LITE',
+		'  return v / 0.75;',
+		'#else',
+		'  p = p * 2.01 + vec3(8.3, 2.8, 5.4); v += 0.125 * noise(p); return v / 0.875;',
+		'#endif',
+		'}',
+		// threat hit colour over time: red, absorbed orange, cyan, then Dubai Police green
+		'vec3 hue(float age){',
+		'  vec3 c = mix(RED, ORANGE, smoothstep(0.42, 0.6, age));',
+		'  c = mix(c, CYAN, smoothstep(0.66, 0.84, age));',
+		'  c = mix(c, GREEN, smoothstep(0.84, 1.2, age));',
+		'  return c * (1.0 - 0.55 * exp(-sq((age - 0.75) / 0.09)));',
+		'}',
+		'void main(){',
+		'  if (vH > uReveal) discard;',
+		// hex cells laid out as seen from the front, so they stay regular across the whole dome
+		'  vec2 p = vLocal.xy / uCell;',
+		'  vec2 cs = vec2(1.7320508, 3.0);',
+		'  vec2 a = mod(p, cs) - cs * 0.5; vec2 b = mod(p + cs * 0.5, cs) - cs * 0.5;',
+		'  vec2 hex = dot(a, a) < dot(b, b) ? a : b;',
+		'  vec2 cuv = p - hex;',
+		'  vec2 cxy = cuv * uCell;',
+		'  float e = 1.0 - sq(cxy.x / uRad.x) - sq(cxy.y / uRad.y);',
+		'  vec3 cpos = vec3(cxy, sign(vLocal.z) * uRad.z * sqrt(max(e, 0.0)));',
+		'  vec3 cdir = normalize(cpos / uRad + vec3(0.0, 0.001, 0.0));',
+		'  float cr = hash(vec3(floor(cuv * 4.0 + 0.5), 7.0));',
+		'  vec3 cellCol = vec3(0.0), ringCol = vec3(0.0), flashCol = vec3(0.0); float rip = 0.0;',
+		'  for (int k = 0; k < 4; k++) {',
+		'    vec4 imp = uImp[k]; vec4 prm = uImpP[k];',
+		'    float heavy = prm.z;',
+		'    float age = uTime - imp.w;',
+		'    if (age < 0.0 || age > 1.8 * (1.0 + heavy * 0.5)) continue;',
+		'    float s = prm.y, str = prm.x;',
+		'    float d = distance(vLocal, imp.xyz) / s, dc = distance(cpos, imp.xyz) / s;',
+		'    float life = clamp(age / (1.8 * (1.0 + heavy * 0.5)), 0.0, 1.0);',
+		'    float core = exp(-d * d * 9.0) * exp(-age * 22.0) * (1.0 + heavy);',
+		'    float ring0 = exp(-sq((d - 0.35 - age * 3.0) / 0.07)) * clamp(1.0 - age / 0.16, 0.0, 1.0);',
+		'    float rA = age * 5.5;',
+		'    float ringA = exp(-sq((d - rA) / 0.12)) * exp(-age * 6.5);',
+		'    float rB = max(age - 0.05, 0.0) * 5.5 * 0.62;',
+		'    float ringB = exp(-sq((d - rB) / 0.2)) * exp(-age * 4.0) * 0.55;',
+		'    float rC = max(age - 0.1, 0.0) * 5.5 * 0.4;',
+		'    float ringC = exp(-sq((d - rC) / 0.38)) * (1.0 - life) * 0.22;',
+		'    rip += (ringA + ringB * 0.6) * str;',
+		'    float reach = rB * 0.75 + 0.7 + heavy * 0.4;',
+		'    float inside = clamp((reach - dc) * 1.6 + (cr - 0.5) * 0.9, 0.0, 1.0);',
+		'    float behind = exp(-max(rB - dc - 0.4, 0.0) * 1.1);',
+		'    float cells = inside * behind * clamp(1.0 - life * 1.15, 0.0, 1.0) * step(dc, 2.6 + heavy * 1.2) * (0.6 + 0.4 * cr) * str;',
+		'    float mixT = clamp(dc / max(reach, 0.01), 0.0, 1.0);',
+		'    float crack = 0.0;',
+		'    if (heavy > 0.5) {',
+		'      float n = noise((vLocal - imp.xyz) / s * 2.2 + prm.w * 13.0);',
+		'      crack = pow(clamp(1.0 - abs(n * 2.0 - 1.0), 0.0, 1.0), 26.0) * exp(-d * 1.4) * clamp(1.0 - age / 0.35, 0.0, 1.0) * 0.45 * str;',
+		'    }',
+		'    cellCol += cells * hue(age + mixT * 0.12);',
+		'    ringCol += (ring0 * 1.4 + ringA + ringB + ringC) * str * hue(age + 0.08);',
+		'    flashCol += CORE * core * str * 1.3 + mix(ORANGE, RED, 0.5) * crack;',
+		'  }',
+		// where an incoming threat is about to land, the cells lock on in pulsing red
+		'  for (int k = 0; k < 4; k++) {',
+		'    vec4 tg = uTgt[k];',
+		'    if (tg.w <= 0.001) continue;',
+		'    float dc = distance(cpos, tg.xyz) / 0.6, d = distance(vLocal, tg.xyz) / 0.6, kk = tg.w;',
+		'    float pulse = 0.65 + 0.35 * sin(uTime * (9.0 + kk * 10.0));',
+		'    cellCol += RED * clamp((1.25 + kk * 0.5 - dc) * 2.0 + (cr - 0.5) * 0.7, 0.0, 1.0) * pulse * kk * 0.75;',
+		'    ringCol += RED * exp(-sq((d - (1.8 - kk * 0.75)) / 0.06)) * kk * 0.9;',
+		'  }',
+		'  float wob = clamp(rip, 0.0, 1.0) * 0.35;',
+		'  vec2 hd = abs(hex + wob * 0.22 * vec2(sin(p.y * 2.3 + uTime * 23.0), cos(p.x * 2.1 + uTime * 19.0)));',
+		'  float edge = 0.8660254 - max(dot(hd, vec2(0.5, 0.8660254)), hd.x);',
+		'  float aa = max(fwidth(edge), 0.002);',
+		'  float lw = 0.022 * (1.0 + wob * 2.5);',
+		'  float grid = 1.0 - smoothstep(lw, lw + aa, edge);',
+		'  grid = mix(grid, clamp(lw * 2.6, 0.0, 1.0), clamp(aa * 14.0 - 0.4, 0.0, 1.0));',
+		// slow fractal energy drifting through the cells
+		'  vec3 q = cdir * 3.5;',
+		'  vec3 drift = vec3(uTime * 0.02, uTime * 0.012, -uTime * 0.016);',
+		'  float warp = fbm(q + drift);',
+		'  float n = fbm(q * 1.7 + warp * 1.8 - drift * 1.3);',
+		'  float veins = pow(clamp(1.0 - abs(2.0 * n - 1.0), 0.0, 1.0), 8.0);',
+		'  float patches = smoothstep(0.45, 0.75, warp);',
+		'  float inner = clamp(1.0 - edge * 1.6, 0.0, 1.0);',
+		'  float ch = clamp(cpos.y / uRad.y, 0.0, 1.0);',
+		'  float front = clamp(ch * 2.0, 0.0, 1.0) + (warp - 0.5) * 0.55 + (n - 0.5) * 0.25 + 0.06 * sin(cdir.x * 9.0 + uTime * 0.37);',
+		'  float wd = abs(front - fract(uTime * 0.07)); wd = min(wd, 1.0 - wd);',
+		'  float band = exp(-sq(wd / 0.05));',
+		'  float shimmer = mix(0.85, 1.0, hash(floor(cdir * 97.0 + 0.5) + floor(uTime * 5.0)));',
+		'  float fres = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 3.0);',
+		'  float breathe = 1.0 + sin(uTime * 0.55) * 0.5;',
+		'  float fade = 1.0 - 0.45 * smoothstep(0.55, 1.0, vH);',
+		'  vec3 tint = mix(TEAL, TOP, smoothstep(0.15, 0.95, vH));',
+		'  float heat = smoothstep(0.6, 0.78, n) * (0.35 + 0.65 * patches) + veins * 0.8;',
+		'  vec3 col = tint * (grid * (0.1 + heat * 0.42 + band * 0.3) + heat * inner * 0.05) * shimmer;',
+		'  col += WAVE * band * grid * (0.35 + heat * 1.2);',
+		'  col += tint * fres * (0.38 + 0.12 * breathe);',
+		'  col *= fade;',
+		// lighter over the video screen inside it, so the film stays clear
+		'  vec2 sp = gl_FragCoord.xy / uRes * 2.0 - 1.0;',
+		'  col *= 1.0 - 0.7 * smoothstep(0.0, 0.04, min(min(sp.x - uHole.x, uHole.y - sp.x), min(sp.y - uHole.z, uHole.w - sp.y)));',
+		// the shield builds up from the ground with a bright edge as he arrives
+		'  col += WAVE * exp(-sq((vH - uReveal) / 0.025)) * step(uReveal, 0.999) * 1.6;',
+		'  col *= uLife;',
+		'  col += cellCol * (grid * 1.6 + inner * 0.22) + ringCol * (0.55 + grid * 1.2) + flashCol;',
+		'  float dim = clamp(dot(cellCol + ringCol * 0.6 + flashCol, vec3(0.33)) * 0.5, 0.0, 1.0) * 0.45;',
+		'  gl_FragColor = vec4(max(col, 0.0), dim);',
+		// without the bloom pass this blends after gamma, where a faint glow would read as a haze
+		'#if GAMMA_BLEND',
+		'  gl_FragColor.rgb *= 1.6;',
+		'#else',
+		'  #include <encodings_fragment>',
+		'#endif',
+		'}'
+	].join('\n');
+	// camera-facing quad: a dark crimson glass sphere with a hot rim, two orbiting rings and the threat's icon
+	var ORB_VS = [
+		'uniform float uSize; varying vec2 vP;',
+		'void main(){ vP = position.xy * 2.0; vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0); mv.xy += position.xy * uSize; gl_Position = projectionMatrix * mv; }'
+	].join('\n');
+	var ORB_FS = [
+		'uniform float uTime; uniform float uAlpha; uniform float uFlash; uniform float uCrack; uniform float uSeed;',
+		'uniform sampler2D uIcon; uniform vec2 uCell; varying vec2 vP;',
+		'float sq(float x){ return x * x; }',
+		'float h1(float x){ return fract(sin(x * 127.1) * 43758.5453); }',
+		'float n1(float x){ float i = floor(x); float f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }',
+		'float ring(vec2 p, float ang, float tilt, float rad, float w){',
+		'  float s = sin(ang), c = cos(ang); vec2 q = vec2(c * p.x - s * p.y, s * p.x + c * p.y);',
+		'  return exp(-sq((length(vec2(q.x, q.y / tilt)) - rad) * tilt / w)) * (step(0.0, q.y) * 0.55 + 0.45);',
+		'}',
+		'void main(){',
+		'  vec2 p = vP; float r = length(p); if (r > 1.0) discard;',
+		'  float t = uTime + uSeed * 7.0;',
+		'  float au = atan(p.y, p.x) / 6.2831853 + 0.5;',
+		'  float dest = uCrack;',
+		'  float rr = r + (n1(au * 14.0 + t * 6.0) - 0.5) * (0.02 + dest * 0.1) + (n1(au * 37.0 - t * 11.0) - 0.5) * dest * 0.05;',
+		'  float segId = floor(au * 9.0 + uSeed), seg = fract(au * 9.0 + uSeed);',
+		'  float keep = mix(1.0, step(uCrack * 1.05, h1(segId + uSeed * 3.1)) * smoothstep(0.0, 0.08, seg) * smoothstep(1.0, 0.92, seg), step(0.001, uCrack));',
+		'  rr -= uCrack * 0.22 * h1(segId + 1.7);',
+		'  const float R = 0.78;',
+		'  float inside = 1.0 - smoothstep(R - 0.02, R + 0.02, rr);',
+		'  float body = inside * (1.0 - uCrack);',
+		'  float rim = exp(-sq((rr - R) / 0.035)) * keep;',
+		'  float halo = exp(-max(rr - R, 0.0) / 0.09) * (1.0 - inside) * 0.55 * keep;',
+		'  float fres = (pow(clamp(rr / R, 0.0, 1.0), 4.0) * 0.6 + 0.12) * inside * (1.0 - uCrack);',
+		'  float rings = (ring(p, t * 0.9, 0.3, 0.56, 0.022) + ring(p, -t * 0.6 + 1.7, 0.55, 0.44, 0.02) * 0.6) * 0.45 * (1.0 - uCrack);',
+		'  vec2 sp = vec2(cos(t * 2.4), sin(t * 2.4) * 0.3) * 0.56;',
+		'  float spark = exp(-dot(p - sp, p - sp) * 700.0) * step(0.0, sin(t * 2.4)) * (1.0 - uCrack);',
+		'  vec2 iu = p / (R * 0.66) * 0.5 + 0.5;',
+		'  float icon = 0.0;',
+		'  if (iu.x > 0.0 && iu.x < 1.0 && iu.y > 0.0 && iu.y < 1.0) icon = texture2D(uIcon, vec2((uCell.x + iu.x) / 4.0, 1.0 - (uCell.y + 1.0 - iu.y) / 2.0)).a;',
+		'  icon *= inside * (1.0 - uCrack);',
+		'  vec3 light = vec3(2.6, 0.32, 0.08) * (rim * 1.3 + halo * 0.6) + vec3(1.9, 0.1, 0.035) * (fres + rings) + vec3(2.6, 1.2, 0.6) * spark + vec3(2.6, 0.75, 0.55) * icon;',
+		'  light *= 1.0 + uFlash;',
+		'  float a = body * 0.55;',
+		'  gl_FragColor = vec4((vec3(0.09, 0.004, 0.002) * a + light) * uAlpha, a * uAlpha);',
+		'  #include <encodings_fragment>',
+		'}'
+	].join('\n');
+	var TRAIL_VS = 'attribute float aT; attribute float aS; varying float vT; varying float vS; void main(){ vT = aT; vS = aS; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+	var TRAIL_FS = [
+		'uniform float uAlpha; varying float vT; varying float vS;',
+		'void main(){',
+		'  float k = pow(1.0 - vT, 1.6) * (1.0 - vS * vS) * uAlpha;',
+		'  gl_FragColor = vec4(mix(vec3(2.4, 0.7, 0.35), vec3(1.6, 0.08, 0.03), vT) * k, 1.0);',
+		'  #include <encodings_fragment>',
+		'}'
+	].join('\n');
+	// line icons for the threat types in the film: malware, a broken shield, ransomware,
+	// phishing, a stolen password, a server attack, a virus and a warning
+	var threatIcons = (function () {
+		var c = document.createElement('canvas'); c.width = 512; c.height = 256;
+		var g = c.getContext('2d');
+		g.strokeStyle = g.fillStyle = '#fff'; g.lineWidth = 7; g.lineCap = g.lineJoin = 'round';
+		function cell(k, draw) { g.save(); g.translate((k % 4) * 128 + 64, Math.floor(k / 4) * 128 + 64); g.beginPath(); draw(); g.restore(); }
+		cell(0, function () { // bug
+			g.ellipse(0, 10, 18, 26, 0, 0, Math.PI * 2); g.moveTo(10, -22); g.arc(0, -22, 10, 0, Math.PI * 2);
+			[-6, 10, 26].forEach(function (y, i) { g.moveTo(-18, y); g.lineTo(-36, y - 8 + i * 6); g.moveTo(18, y); g.lineTo(36, y - 8 + i * 6); });
+			g.moveTo(-5, -31); g.lineTo(-14, -44); g.moveTo(5, -31); g.lineTo(14, -44); g.moveTo(0, -14); g.lineTo(0, 34); g.stroke();
+		});
+		cell(1, function () { // broken shield
+			g.moveTo(0, -42); g.quadraticCurveTo(20, -32, 36, -34); g.quadraticCurveTo(36, 16, 0, 44); g.quadraticCurveTo(-36, 16, -36, -34); g.quadraticCurveTo(-20, -32, 0, -42);
+			g.moveTo(4, -40); g.lineTo(-8, -12); g.lineTo(8, 2); g.lineTo(-6, 22); g.lineTo(2, 42); g.stroke();
+		});
+		cell(2, function () { // padlock
+			g.moveTo(-18, -6); g.lineTo(-18, -20); g.arc(0, -20, 18, Math.PI, 0); g.lineTo(18, -6);
+			g.rect(-30, -6, 60, 46); g.moveTo(5, 12); g.arc(0, 12, 5, 0, Math.PI * 2); g.moveTo(0, 17); g.lineTo(0, 28); g.stroke();
+		});
+		cell(3, function () { // hook
+			g.moveTo(10, -44); g.lineTo(10, 18); g.arc(-8, 18, 18, 0, Math.PI * 0.95); g.lineTo(-24, 4); g.lineTo(-30, 14);
+			g.moveTo(10, -44); g.arc(10, -38, 6, -Math.PI / 2, Math.PI * 1.5); g.stroke();
+		});
+		cell(4, function () { // key
+			g.arc(-20, 0, 16, 0, Math.PI * 2); g.moveTo(-4, 0); g.lineTo(40, 0); g.moveTo(28, 0); g.lineTo(28, 14); g.moveTo(38, 0); g.lineTo(38, 10); g.stroke();
+		});
+		cell(5, function () { // server rack
+			[-34, -8, 18].forEach(function (y) { g.rect(-32, y, 64, 20); g.moveTo(-18, y + 10); g.lineTo(6, y + 10); });
+			g.stroke(); g.beginPath(); [-34, -8, 18].forEach(function (y) { g.moveTo(24, y + 10); g.arc(20, y + 10, 4, 0, Math.PI * 2); }); g.fill();
+		});
+		cell(6, function () { // virus
+			g.arc(0, 0, 20, 0, Math.PI * 2);
+			for (var i = 0; i < 8; i++) { var an = i * Math.PI / 4, cx = Math.cos(an), sy = Math.sin(an); g.moveTo(cx * 20, sy * 20); g.lineTo(cx * 34, sy * 34); g.moveTo(cx * 34 + 5, sy * 34); g.arc(cx * 34, sy * 34, 5, 0, Math.PI * 2); }
+			g.stroke();
+		});
+		cell(7, function () { // warning
+			g.moveTo(0, -40); g.lineTo(40, 32); g.lineTo(-40, 32); g.closePath(); g.moveTo(0, -12); g.lineTo(0, 8); g.stroke();
+			g.beginPath(); g.arc(0, 20, 4, 0, Math.PI * 2); g.fill();
+		});
+		var t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+		return t;
+	})();
+
 	BUILD.city = function (st, grp) {
 		st.floorKey = 'grid'; st.floorAt = [0.6, -3.4];
+		// the shield: a wide dome over the whole skyline, its centre well behind him
+		var SC = new THREE.Vector3(0.9, 0, -13.2), SR = new THREE.Vector3(9.4, 6.9, 6.6);
+		function sq(x) { return x * x; }
+		function domeH(x, z) { var e = 1 - sq((x - SC.x) / SR.x) - sq((z - SC.z) / SR.z); return e > 0 ? SR.y * Math.sqrt(e) : 0; }
+		var seed = 7;
+		function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
 		var win = textTex(64, 128), wg = win.g;
 		wg.fillStyle = '#071a1a'; wg.fillRect(0, 0, 64, 128);
-		for (var yy = 4; yy < 128; yy += 8) for (var xx = 4; xx < 64; xx += 10) { wg.fillStyle = Math.random() < 0.55 ? 'rgba(120,255,225,' + (0.35 + Math.random() * 0.5) + ')' : 'rgba(40,90,90,0.4)'; wg.fillRect(xx, yy, 6, 4); }
+		for (var yy = 4; yy < 128; yy += 8) for (var xx = 4; xx < 64; xx += 10) { wg.fillStyle = rnd() < 0.55 ? 'rgba(120,255,225,' + (0.35 + rnd() * 0.5) + ')' : 'rgba(40,90,90,0.4)'; wg.fillRect(xx, yy, 6, 4); }
 		win.t.needsUpdate = true; win.t.wrapS = win.t.wrapT = THREE.RepeatWrapping;
 		var city = new THREE.Group(), towers = [];
 		var bmat = new THREE.MeshStandardMaterial({ color: 0x0c2427, emissive: 0xffffff, emissiveMap: win.t, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.6 });
-		for (var i = 0; i < 26; i++) {
-			var w = 0.3 + Math.random() * 0.45, h = 0.8 + Math.pow(Math.random(), 1.6) * 3.2;
-			var geo = new THREE.BoxBufferGeometry(w, h, w);
-			var m = new THREE.Mesh(geo, bmat);
-			var ang = (i / 26) * Math.PI * 1.1 - 0.15, rad = 4.2 + Math.random() * 2.2;
-			m.position.set(Math.cos(ang) * rad * 1.3 - 1.0, h / 2, -6.5 - Math.sin(ang) * rad * 0.55);
+		// towers fill the shield's footprint, tallest towards the middle, all under the dome
+		for (var n = 0; n < 400 && towers.length < 44; n++) {
+			var ang = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * 0.86;
+			var x = SC.x + Math.cos(ang) * rr * SR.x, z = SC.z + Math.sin(ang) * rr * SR.z;
+			if (z > -7.4 || Math.abs(x - 0.0) < 0.7 && Math.abs(z + 13.4) < 0.9) continue;
+			var w = 0.3 + rnd() * 0.42, hmax = domeH(x, z) * 0.8 - 0.3;
+			if (hmax < 0.6) continue;
+			var h = Math.min(hmax, 0.7 + hmax * Math.pow(rnd(), 1.4) * (1.1 - rr * 0.6));
+			var m = new THREE.Mesh(new THREE.BoxBufferGeometry(w, h, w * (0.8 + rnd() * 0.4)), bmat);
+			m.position.set(x, h / 2, z); m.rotation.y = (rnd() - 0.5) * 0.4;
 			m.userData.h = h; city.add(m); towers.push(m);
 		}
-		// the tallest tower, tapering in steps
+		// the tallest tower, tapering in steps, at the heart of the shield
 		var burj = new THREE.Group();
 		[[0.5, 2.2], [0.36, 1.8], [0.24, 1.4], [0.14, 1.1], [0.05, 0.9]].reduce(function (y, d) {
 			var m = new THREE.Mesh(new THREE.CylinderBufferGeometry(d[0] * 0.8, d[0], d[1], 6), bmat);
 			m.position.y = y + d[1] / 2; burj.add(m); return y + d[1];
 		}, 0);
-		burj.position.set(0.6, 0, -9.6); city.add(burj);
+		burj.position.set(0.0, 0, -13.4); burj.scale.set(1, 0.84, 1); city.add(burj);
 		grp.add(city);
-		var dome = new THREE.Mesh(new THREE.SphereBufferGeometry(6.2, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x3ff0c8, wireframe: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-		dome.position.set(1.4, 0, -9.5); dome.scale.set(0.9, 0.6, 0.6); grp.add(dome);
-		var shield = new THREE.Group();
-		var ring1 = new THREE.Mesh(new THREE.TorusBufferGeometry(0.62, 0.02, 8, 80), new THREE.MeshBasicMaterial({ color: 0x5ffff0 }));
-		var ring2 = new THREE.Mesh(new THREE.TorusBufferGeometry(0.78, 0.008, 8, 80, Math.PI * 1.5), new THREE.MeshBasicMaterial({ color: 0x5ffff0 }));
-		var sh = new THREE.Shape(); sh.moveTo(0, 0.4); sh.quadraticCurveTo(0.2, 0.32, 0.32, 0.34); sh.quadraticCurveTo(0.32, -0.1, 0, -0.4); sh.quadraticCurveTo(-0.32, -0.1, -0.32, 0.34); sh.quadraticCurveTo(-0.2, 0.32, 0, 0.4);
-		var shieldMesh = new THREE.Mesh(new THREE.ShapeBufferGeometry(sh, 24), new THREE.MeshBasicMaterial({ color: 0x3ff0c8, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
-		shield.add(ring1, ring2, shieldMesh);
-		shield.position.set(-0.5, 3.0, -6.0); grp.add(shield);
+
+		var shieldU = {
+			uTime: { value: 0 }, uLife: { value: 0 }, uReveal: { value: 0 }, uCell: { value: 0.25 }, uRad: { value: SR.clone() },
+			uHole: { value: new THREE.Vector4(9, 9, 9, 9) }, uRes: { value: new THREE.Vector2(1, 1) },
+			uImp: { value: [0, 1, 2, 3].map(function () { return new THREE.Vector4(0, 0, 0, -100); }) },
+			uImpP: { value: [0, 1, 2, 3].map(function () { return new THREE.Vector4(1, 1, 0, 0); }) },
+			uTgt: { value: [0, 1, 2, 3].map(function () { return new THREE.Vector4(); }) }
+		};
+		var dome = new THREE.Mesh(new THREE.SphereBufferGeometry(1, 96, 40, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.ShaderMaterial({
+			uniforms: shieldU, vertexShader: SHIELD_VS, fragmentShader: SHIELD_FS, defines: { GAMMA_BLEND: composer ? 0 : 1, LITE: coarse ? 1 : 0 },
+			transparent: true, depthWrite: false, side: THREE.DoubleSide, extensions: { derivatives: true },
+			blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor
+		}));
+		dome.position.copy(SC); dome.scale.copy(SR); dome.renderOrder = 2; dome.frustumCulled = false;
+		grp.add(dome);
+		// the emitter ring where the shield meets the ground
+		var base = new THREE.Mesh(new THREE.RingBufferGeometry(0.985, 1.0, 160), new THREE.MeshBasicMaterial({ color: 0x3ff0c8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+		base.rotation.x = -Math.PI / 2; base.position.set(SC.x, 0.025, SC.z); base.scale.set(SR.x, SR.z, 1); grp.add(base);
+
+		// threats: up to four in the air at once
+		var orbGeo = new THREE.PlaneBufferGeometry(1, 1), M = 18, threats = [];
+		var trailT = new Float32Array(M * 2), trailS = new Float32Array(M * 2), trailIdx = [];
+		for (var i = 0; i < M; i++) { trailT[i * 2] = trailT[i * 2 + 1] = i / (M - 1); trailS[i * 2] = -1; trailS[i * 2 + 1] = 1; }
+		for (i = 0; i < M - 1; i++) { var a0 = i * 2; trailIdx.push(a0, a0 + 1, a0 + 2, a0 + 1, a0 + 3, a0 + 2); }
+		var flashMat = function () { return new THREE.SpriteMaterial({ map: glowTex, color: 0xff6a4a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }); };
+		for (i = 0; i < 4; i++) {
+			var ou = { uTime: { value: 0 }, uAlpha: { value: 0 }, uFlash: { value: 0 }, uCrack: { value: 0 }, uSeed: { value: i * 1.37 }, uSize: { value: 1.1 }, uIcon: { value: threatIcons }, uCell: { value: new THREE.Vector2() } };
+			var orb = new THREE.Mesh(orbGeo, new THREE.ShaderMaterial({
+				uniforms: ou, vertexShader: ORB_VS, fragmentShader: ORB_FS, transparent: true, depthWrite: false,
+				blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor
+			}));
+			orb.frustumCulled = false; orb.renderOrder = 4; orb.visible = false; grp.add(orb);
+			var tg = new THREE.BufferGeometry();
+			tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(M * 6), 3));
+			tg.setAttribute('aT', new THREE.BufferAttribute(trailT, 1)); tg.setAttribute('aS', new THREE.BufferAttribute(trailS, 1));
+			tg.setIndex(trailIdx);
+			var tu = { uAlpha: { value: 0 } };
+			var trail = new THREE.Mesh(tg, new THREE.ShaderMaterial({ uniforms: tu, vertexShader: TRAIL_VS, fragmentShader: TRAIL_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+			trail.frustumCulled = false; trail.renderOrder = 3; trail.visible = false; grp.add(trail);
+			var flash = new THREE.Sprite(flashMat()); flash.visible = false; flash.renderOrder = 5; grp.add(flash);
+			threats.push({ on: false, orb: orb, ou: ou, trail: trail, tu: tu, flash: flash, start: new THREE.Vector3(), ctrl: new THREE.Vector3(), target: new THREE.Vector3(), side: new THREE.Vector3(), t0: 0, dur: 2, heavy: 0, hit: false, wob: 0, phase: 0, r: 0.45 });
+		}
+		// sparks thrown off each hit
+		var SPN = 4 * 18, spPos = new Float32Array(SPN * 3), spCol = new Float32Array(SPN * 3), sparks = [];
+		var spGeo = new THREE.BufferGeometry();
+		spGeo.setAttribute('position', new THREE.BufferAttribute(spPos, 3)); spGeo.setAttribute('color', new THREE.BufferAttribute(spCol, 3));
+		var spMesh = new THREE.Points(spGeo, new THREE.PointsMaterial({ size: 0.16, map: glowTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+		spMesh.frustumCulled = false; spMesh.renderOrder = 5; grp.add(spMesh);
+		for (i = 0; i < SPN; i++) sparks.push({ p: new THREE.Vector3(), v: new THREE.Vector3(), t0: -100 });
+
+		var UP = new THREE.Vector3(0, 1, 0), _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _n = new THREE.Vector3(), _cam = new THREE.Vector3();
+		function normalAt(p, out) { return out.set((p.x - SC.x) / sq(SR.x), p.y / sq(SR.y), (p.z - SC.z) / sq(SR.z)).normalize(); }
+		// a spot on the side of the dome facing us that the screen, the text and Burhan don't cover
+		function screenRect() {
+			var sc = st.screen; if (!sc || !sc.visible) return null;
+			var w = sc.userData.w / 2 + 0.3, h = sc.userData.h / 2 + 0.3, r = [1, -1, 1, -1];
+			[[-w, -h], [w, -h], [-w, h], [w, h]].forEach(function (q) {
+				_c.set(q[0], q[1], 0); sc.localToWorld(_c); _c.project(camera);
+				r[0] = Math.min(r[0], _c.x); r[1] = Math.max(r[1], _c.x); r[2] = Math.min(r[2], _c.y); r[3] = Math.max(r[3], _c.y);
+			});
+			return r;
+		}
+		function pickTarget(out) {
+			var rect = screenRect(), best = null;
+			_b.set(person.position.x, 1.0, person.position.z).project(camera);
+			var px = _b.x;
+			for (var k = 0; k < 16; k++) {
+				var el = 0.12 + Math.random() * 0.7, az = (Math.random() - 0.5) * 2.0;
+				out.set(SC.x + SR.x * Math.cos(el) * Math.sin(az), SR.y * Math.sin(el), SC.z + SR.z * Math.cos(el) * Math.cos(az));
+				_c.copy(out).add(grp.position).project(camera);
+				var ok = Math.abs(_c.x) < 0.88 && _c.y < 0.8 && _c.y > (mobile ? -0.05 : -0.5);
+				if (ok && rect && _c.x > rect[0] - 0.05 && _c.x < rect[1] + 0.05 && _c.y > rect[2] - 0.05 && _c.y < rect[3] + 0.05) ok = false;
+				if (ok && !mobile && _c.x < -0.2) ok = false;
+				if (ok && Math.abs(_c.x - px) < (mobile ? 0.3 : 0.12) && _c.y < 0.2) ok = false;
+				if (ok) return out;
+				if (!best) best = out.clone();
+			}
+			return out.copy(best);
+		}
+		function launch(t, delay, heavy) {
+			var th = null;
+			for (var k = 0; k < threats.length; k++) if (!threats[k].on) { th = threats[k]; break; }
+			if (!th) return;
+			pickTarget(th.target);
+			normalAt(th.target, _n);
+			var side = _a.crossVectors(_n, UP).normalize();
+			// come in from the sky off to one side, starting inside the frame so the whole run is seen
+			for (k = 0; k < 6; k++) {
+				var lat = (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.5), dist = (5.5 + Math.random() * 2.5) * (1 - k * 0.1);
+				th.start.copy(th.target).addScaledVector(_n, 0.6 * dist).addScaledVector(UP, 0.32 * dist).addScaledVector(side, lat * dist);
+				_c.copy(th.start).add(grp.position).project(camera);
+				if (Math.abs(_c.x) < 1.0 && _c.y < 0.95 && _c.z < 1) break;
+			}
+			var len = th.start.distanceTo(th.target), curve = (Math.random() - 0.5) * 0.3;
+			th.side.copy(side);
+			th.ctrl.copy(th.start).lerp(th.target, 0.45).addScaledVector(side, curve * len).addScaledVector(UP, Math.abs(curve) * 0.35 * len);
+			th.heavy = heavy ? 1 : 0;
+			th.r = heavy ? 0.52 : 0.33 + Math.random() * 0.06;
+			th.ou.uSize.value = th.r * 2 / 0.78;
+			th.ou.uCell.value.set(Math.floor(Math.random() * 4), Math.floor(Math.random() * 2));
+			th.wob = 0.35 * th.r; th.phase = Math.random() * 6.28;
+			th.t0 = t + delay; th.dur = (heavy ? 2.9 : 1.9 + Math.random() * 0.7);
+			th.on = true; th.hit = false;
+		}
+		// slow while it acquires its target, then accelerating into the hit
+		function ease(u) { return u < 0.22 ? 0.08 * sq(u / 0.22) : 0.08 + 0.92 * Math.pow((u - 0.22) / 0.78, 2.2); }
+		function along(th, u, out) {
+			var s = ease(Math.min(1, Math.max(0, u))), o = 1 - s;
+			out.set(0, 0, 0).addScaledVector(th.start, o * o).addScaledVector(th.ctrl, 2 * o * s).addScaledVector(th.target, s * s);
+			return out.addScaledVector(th.side, Math.sin(u * Math.PI * 2.4 + th.phase) * th.wob * o * o);
+		}
+		var nextAttack = 0;
+		function hit(th, t) {
+			// reuse the oldest of the four impact slots
+			var k = 0;
+			for (var j0 = 1; j0 < 4; j0++) if (shieldU.uImp.value[j0].w < shieldU.uImp.value[k].w) k = j0;
+			shieldU.uImp.value[k].set(th.target.x - SC.x, th.target.y - SC.y, th.target.z - SC.z, t);
+			shieldU.uImpP.value[k].set(1, th.heavy ? 0.95 : 0.7, th.heavy, Math.random());
+			normalAt(th.target, _n);
+			var base0 = threats.indexOf(th) * 18;
+			for (var j = 0; j < 18; j++) {
+				var sp = sparks[base0 + j];
+				sp.p.copy(th.target); sp.t0 = t;
+				sp.v.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(5).addScaledVector(_n, 2.5 + Math.random() * 2);
+			}
+		}
+		function reset() {
+			threats.forEach(function (th) { th.on = false; th.orb.visible = th.trail.visible = th.flash.visible = false; });
+			shieldU.uTgt.value.forEach(function (v) { v.w = 0; });
+			nextAttack = 0;
+		}
+		st.hide = reset;
+
 		// the ride pod, the metro and the flying cars from the 360 VR film
-		// the ride pod flies in over the skyline, open end towards us
 		var pod = new THREE.Group(), podBody = new THREE.Group(), metro = new THREE.Group(), cars = [];
-		var POD_D = [-3.3, 4.5, -11.0], POD_M = [-0.9, 6.2, -12.5], POD = mobile ? POD_M : POD_D;
+		var POD_D = [-3.8, 3.9, -10.6], POD_M = [-1.6, 1.5, -10.2], POD = mobile ? POD_M : POD_D;
 		pod.add(podBody); podBody.rotation.y = Math.PI - 0.6; podBody.scale.setScalar(0.78);
 		grp.add(pod);
 		var podGlow = new THREE.PointLight(0x7ffff0, 0, 6, 2); podGlow.position.set(0.3, 0.2, 1.2); pod.add(podGlow);
@@ -1126,11 +1495,9 @@
 			var f = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ map: glowTex, color: 0x5ffff0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
 			f.position.set(x, -0.9, 0.3); f.scale.setScalar(0.6); pod.add(f); thrust.push(f);
 		});
-		var podPad = new THREE.Mesh(new THREE.RingBufferGeometry(1.4, 1.5, 64), new THREE.MeshBasicMaterial({ color: 0x5ffff0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-		podPad.rotation.x = -Math.PI / 2; podPad.position.set(POD[0], 0.02, POD[2]); grp.add(podPad);
-		metro.position.set(0, 4.2, -15); grp.add(metro);
+		metro.position.set(0, 4.2, -15.5); grp.add(metro);
 		var rail = new THREE.Mesh(new THREE.BoxBufferGeometry(120, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x0a1416, emissive: 0x2ad6b4, emissiveIntensity: 0.6 }));
-		rail.position.set(0, 3.35, -15); grp.add(rail);
+		rail.position.set(0, 3.35, -15.5); grp.add(rail);
 		var CARS = [{ n: 'carA', c: [-879.59, 4.47, 584.64], len: 39.5 }, { n: 'carB', c: [-1077.0, 4.47, 963.4], len: 32.5 }];
 		st.lazy = function () {
 			loadModel('media/models/cockpit.glb', function (m) {
@@ -1152,35 +1519,92 @@
 				});
 			});
 		};
-		st.update = function (t, life) {
+		st.update = function (t, life, dt) {
 			var fly = easeOut(smooth(0.05, 0.85, life));
-			POD = mobile ? POD_M : POD_D; podPad.position.set(POD[0], 0.02, POD[2]);
+			POD = mobile ? POD_M : POD_D;
 			pod.visible = life > 0.01;
-			pod.position.set(POD[0] - (1 - fly) * 14, POD[1] + Math.sin(t * 1.1) * 0.12 + (1 - fly) * 1.5, POD[2] + (1 - fly) * 2);
-			pod.rotation.set(Math.sin(t * 0.8) * 0.03, Math.sin(t * 0.35) * 0.12, (1 - fly) * 0.35 + Math.sin(t * 0.9) * 0.04);
+			// the pod glides in from deeper in the city, inside the shield
+			pod.position.set(POD[0] - (1 - fly) * 5, POD[1] + Math.sin(t * 1.1) * 0.12 + (1 - fly) * 1.2, POD[2] - (1 - fly) * 4);
+			pod.rotation.set(Math.sin(t * 0.8) * 0.03, Math.sin(t * 0.35) * 0.12, (1 - fly) * 0.25 + Math.sin(t * 0.9) * 0.04);
 			podGlow.intensity = 3.0 * smooth(0.4, 1, life);
 			podFill.intensity = 1.6 * smooth(0.4, 1, life);
 			thrust.forEach(function (f, j) { f.material.opacity = smooth(0.2, 0.8, life) * (0.75 + 0.25 * Math.sin(t * 17 + j)); f.lookAt(camera.position); });
-			podPad.material.opacity = 0.45 * smooth(0.6, 1, life) * (0.7 + 0.3 * Math.sin(t * 3));
 			metro.visible = life > 0.2;
 			metro.position.x = 70 - ((t * 9) % 150);
 			var kr = smooth(0.2, 0.7, life); rail.scale.set(1, Math.max(0.001, kr), Math.max(0.001, kr)); rail.visible = kr > 0.01;
 			cars.forEach(function (c) {
-				var dir = c.k ? -1 : 1, sp = c.k ? 5.5 : 4.2, span = 34;
-				var x = dir * (((t * sp + c.k * 13) % span) - span / 2);
-				c.o.position.set(x, c.k ? 3.1 : 1.9, c.k ? -10.5 : -8.8);
+				// flying cars loop between the towers, under the shield and clear of the text
+				var dir = c.k ? -1 : 1, sp = c.k ? 3.2 : 2.6, span = c.k ? 10.5 : 10;
+				var f = ((t * sp + c.k * 5) % span) / span;
+				c.o.position.set(SC.x + 1.3 + dir * (f - 0.5) * span, c.k ? 3.1 : 1.9, c.k ? -10.8 : -9.2);
 				c.o.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+				c.o.scale.setScalar(Math.max(0.001, smooth(0, 0.08, f) * smooth(1, 0.92, f)));
 				c.o.visible = life > 0.3;
 			});
-			towers.forEach(function (m, j) { var k = smooth(j / 40, j / 40 + 0.5, life); m.scale.set(1, Math.max(0.001, k), 1); m.position.y = m.userData.h * k / 2; });
-			var kb = smooth(0.2, 0.8, life); burj.scale.set(1, Math.max(0.001, kb), 1);
+			towers.forEach(function (m, j) { var k = smooth(j / 60, j / 60 + 0.5, life); m.scale.set(1, Math.max(0.001, k), 1); m.position.y = m.userData.h * k / 2; });
+			var kb = smooth(0.2, 0.8, life); burj.scale.set(1, Math.max(0.001, kb) * 0.84, 1);
 			city.visible = life > 0.01;
-			dome.material.opacity = 0.07 * smooth(0.5, 1, life) * (0.7 + 0.3 * Math.sin(t * 2));
-			dome.rotation.y = t * 0.05;
-			var ks = smooth(0.55, 1, life);
-			shield.scale.setScalar(Math.max(0.001, ks)); shield.visible = ks > 0.01;
-			shield.position.y = 3.0 + Math.sin(t * 1.2) * 0.06;
-			ring2.rotation.z = -t * 1.2; shield.rotation.y = Math.sin(t * 0.6) * 0.4;
+
+			// the shield rises once the city is up, then threats start coming in
+			var ks = smooth(0.35, 0.95, life);
+			dome.visible = ks > 0.001;
+			shieldU.uTime.value = t; shieldU.uLife.value = ks; shieldU.uReveal.value = ks >= 0.999 ? 1.01 : ks;
+			if (dome.visible) { var hr = screenRect(); if (hr) shieldU.uHole.value.set(hr[0], hr[1], hr[2], hr[3]); else shieldU.uHole.value.set(9, 9, 9, 9); renderer.getDrawingBufferSize(shieldU.uRes.value); }
+			base.material.opacity = 0.75 * ks;
+			if (life > 0.85 && t > nextAttack) {
+				var r = Math.random();
+				if (r < 0.5) launch(t, 0, Math.random() < 0.12);
+				else if (r < 0.75) { launch(t, 0, false); launch(t, 0.3, false); }
+				else if (r < 0.9) { launch(t, 0, false); launch(t, 0.25, false); launch(t, 0.5, false); }
+				else launch(t, 0, true);
+				nextAttack = t + 1.6 + Math.random() * 1.4;
+			}
+			if (life < 0.5 && nextAttack) reset();
+			grp.worldToLocal(_cam.copy(camera.position));
+			threats.forEach(function (th, k) {
+				var tgt = shieldU.uTgt.value[k];
+				if (!th.on) { tgt.w = 0; return; }
+				var u = (t - th.t0) / th.dur;
+				th.ou.uTime.value = t;
+				if (u < 0) { th.orb.visible = th.trail.visible = false; return; }
+				if (u < 1) {
+					along(th, u, th.orb.position);
+					th.orb.visible = true;
+					th.ou.uAlpha.value = smooth(0, 0.12, u); th.ou.uFlash.value = 0; th.ou.uCrack.value = 0;
+					tgt.set(th.target.x - SC.x, th.target.y - SC.y, th.target.z - SC.z, smooth(0.35, 1, u));
+					// trail: the path just behind the orb, as a ribbon facing the camera
+					var pos = th.trail.geometry.attributes.position, arr = pos.array;
+					for (var j = 0; j < M; j++) {
+						along(th, u - j * 0.022, _a);
+						along(th, u - j * 0.022 + 0.01, _b);
+						_b.sub(_a); _c.copy(_cam).sub(_a); _b.cross(_c).normalize().multiplyScalar(th.r * 0.62 * (1 - j / M));
+						arr[j * 6] = _a.x - _b.x; arr[j * 6 + 1] = _a.y - _b.y; arr[j * 6 + 2] = _a.z - _b.z;
+						arr[j * 6 + 3] = _a.x + _b.x; arr[j * 6 + 4] = _a.y + _b.y; arr[j * 6 + 5] = _a.z + _b.z;
+					}
+					pos.needsUpdate = true;
+					th.trail.visible = true; th.tu.uAlpha.value = smooth(0.05, 0.4, u);
+					return;
+				}
+				if (!th.hit) { th.hit = true; tgt.w = 0; hit(th, t); }
+				var a = t - th.t0 - th.dur;
+				th.orb.position.copy(th.target);
+				th.ou.uFlash.value = 3 * Math.max(0, 1 - a / 0.3);
+				th.ou.uCrack.value = smooth(0, 0.3, a);
+				th.ou.uAlpha.value = 1 - smooth(0.12, 0.32, a);
+				th.tu.uAlpha.value = Math.max(0, 1 - a / 0.15);
+				th.flash.visible = a < 0.4;
+				th.flash.position.copy(th.target);
+				th.flash.scale.setScalar((th.heavy ? 1.6 : 1) * (0.8 + easeOut(Math.min(1, a / 0.4)) * 2.8));
+				th.flash.material.opacity = Math.max(0, 1 - a / 0.4);
+				if (a > 0.45) { th.on = false; th.orb.visible = th.trail.visible = th.flash.visible = false; }
+			});
+			for (var s2 = 0; s2 < SPN; s2++) {
+				var sp = sparks[s2], age = t - sp.t0, kf = age >= 0 && age < 0.7 ? 1 - age / 0.7 : 0;
+				if (kf > 0) { sp.p.addScaledVector(sp.v, dt); sp.v.multiplyScalar(1 - 2.2 * dt); sp.v.y -= 3 * dt; }
+				spPos[s2 * 3] = sp.p.x; spPos[s2 * 3 + 1] = sp.p.y; spPos[s2 * 3 + 2] = sp.p.z;
+				spCol[s2 * 3] = kf * 1.0; spCol[s2 * 3 + 1] = kf * kf * 0.55; spCol[s2 * 3 + 2] = kf * kf * 0.3;
+			}
+			spGeo.attributes.position.needsUpdate = true; spGeo.attributes.color.needsUpdate = true;
 		};
 	};
 
