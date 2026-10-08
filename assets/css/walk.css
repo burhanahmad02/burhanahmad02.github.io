@@ -87,10 +87,100 @@ h1, h2 { text-wrap: balance; }
 	font-size: 0.78rem;
 	color: var(--muted);
 	letter-spacing: 0.04em;
+	-webkit-user-select: none;
+	user-select: none;
 }
-.track { flex: 1; height: 1px; background: var(--line); position: relative; }
-.track-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--fg); }
+.hud-play {
+	pointer-events: auto;
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 2.4rem;
+	height: 2.4rem;
+	padding: 0;
+	border: 1px solid var(--line);
+	border-radius: 50%;
+	background: rgba(8, 8, 10, 0.55);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+	color: var(--fg);
+	cursor: pointer;
+	transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.hud-play:hover { border-color: rgba(243, 241, 236, 0.6); background: rgba(8, 8, 10, 0.75); }
+.hud-play:active { transform: scale(0.94); }
+.hud-play:focus-visible, .track:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+.hud-play svg { grid-area: 1 / 1; width: 0.85rem; height: 0.85rem; fill: currentColor; }
+.hud-play .i-pause, .is-playing .hud-play .i-play { display: none; }
+.is-playing .hud-play .i-pause { display: block; }
+
+/* The timeline is a scrubber: click or drag anywhere on it */
+.track {
+	flex: 1;
+	height: 2px;
+	border-radius: 2px;
+	background: var(--line);
+	position: relative;
+	pointer-events: auto;
+	cursor: pointer;
+	touch-action: none;
+	transition: height 0.15s;
+}
+.track::before { content: ''; position: absolute; left: -0.6rem; right: -0.6rem; top: -1.1rem; bottom: -1.1rem; }
+.track:hover, .is-scrubbing .track { height: 4px; }
+.track:focus { outline: none; }
+.track-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit; background: var(--fg); }
+.track-fill::after {
+	content: '';
+	position: absolute;
+	right: -7px;
+	top: 50%;
+	width: 14px;
+	height: 14px;
+	margin-top: -7px;
+	border-radius: 50%;
+	background: var(--fg);
+	box-shadow: 0 0 0 4px rgba(8, 8, 10, 0.35);
+	transform: scale(0);
+	transition: transform 0.15s;
+}
+.track:hover .track-fill::after, .track:focus-visible .track-fill::after, .is-scrubbing .track-fill::after { transform: scale(1); }
+@media (hover: none) { .track-fill::after { transform: scale(0.7); } }
+.track-tip {
+	position: absolute;
+	bottom: 1.9rem;
+	left: 0;
+	transform: translate(-50%, 4px);
+	display: flex;
+	gap: 0.5em;
+	align-items: baseline;
+	padding: 0.4rem 0.65rem;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: rgba(8, 8, 10, 0.88);
+	color: var(--fg);
+	font-size: 0.78rem;
+	white-space: nowrap;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s, transform 0.15s;
+}
+.track-tip b { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-tip.is-on { opacity: 1; transform: translate(-50%, 0); }
 .hud-chapter { min-width: 9rem; text-align: right; }
+
+.cue-play {
+	padding: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: var(--fg);
+	text-decoration: underline;
+	text-decoration-color: var(--muted);
+	text-underline-offset: 0.25em;
+	cursor: pointer;
+}
+.cue-play:hover { text-decoration-color: var(--fg); }
 
 /* Stops */
 .stops { position: relative; z-index: 10; }
@@ -249,6 +339,9 @@ h2 {
 	.stop-about .roles li { font-size: 0.85rem; padding: 0.4rem 0; }
 	.stop-about .tools { display: none; }
 	.hud-chapter { min-width: 0; }
+	.hud { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); gap: 0.8rem; }
+	.hud-play { width: 2.2rem; height: 2.2rem; }
+	.is-3d .panel { padding-bottom: 4.4rem; }
 	.nav { font-size: 0.85rem; }
 	.nav nav { gap: 0.9rem; }
 }
@@ -307,7 +400,7 @@ h2 {
 
 /* Timeline ticks under the progress line */
 .track-ticks { position: absolute; inset: 0; }
-.track-tick { position: absolute; top: -3px; width: 1px; height: 7px; background: var(--muted); }
+.track-tick { position: absolute; top: 50%; width: 1px; height: 8px; margin-top: -4px; background: var(--muted); pointer-events: none; }
 .track-tick span {
 	position: absolute;
 	top: -1.35rem;
