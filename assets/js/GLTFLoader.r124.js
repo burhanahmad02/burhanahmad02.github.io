@@ -1843,17 +1843,11 @@ THREE.GLTFLoader = ( function () {
 		// Track node names, to ensure no duplicates
 		this.nodeNamesUsed = {};
 
-		// Use an ImageBitmapLoader if imageBitmaps are supported. Moves much of the
-		// expensive work of uploading a texture to the GPU off the main thread.
-		if ( typeof createImageBitmap !== 'undefined' && /Firefox/.test( navigator.userAgent ) === false ) {
-
-			this.textureLoader = new THREE.ImageBitmapLoader( this.options.manager );
-
-		} else {
-
-			this.textureLoader = new THREE.TextureLoader( this.options.manager );
-
-		}
+		// Portfolio change: always decode textures through an <img>. The stock
+		// ImageBitmapLoader path fails on iOS Safari (createImageBitmap rejects
+		// its options) and on hosts whose CSP blocks fetch() of blob:/data: URLs,
+		// and one failed texture drops the whole model.
+		this.textureLoader = new THREE.TextureLoader( this.options.manager );
 
 		this.textureLoader.setCrossOrigin( this.options.crossOrigin );
 

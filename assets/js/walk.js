@@ -489,9 +489,10 @@
 			}
 		}
 		function worldScaleOf(o) { var v = new THREE.Vector3(); o.updateMatrixWorld(true); o.getWorldScale(v); return v.x / (HEIGHT / 1.68); }
-		L.load('media/avatar/burhan-avatar.glb', function (g) { got.body = g; done(); });
-		L.load('media/avatar/walk.glb', function (g) { got.walk = g; done(); });
-		L.load('media/avatar/idle.glb', function (g) { got.idle = g; done(); });
+		function fail(e) { console.error('Avatar failed to load', e); }
+		L.load('media/avatar/burhan-avatar.glb', function (g) { got.body = g; done(); }, undefined, fail);
+		L.load('media/avatar/walk.glb', function (g) { got.walk = g; done(); }, undefined, fail);
+		L.load('media/avatar/idle.glb', function (g) { got.idle = g; done(); }, undefined, fail);
 	})();
 
 	var _hand = new THREE.Vector3();
@@ -525,7 +526,7 @@
 			g.scene.traverse(function (o) { if (o.isMesh) { o.frustumCulled = false; if (o.material) { o.material.envMapIntensity = 0.5; } } });
 			var cbs = modelCache[url]; modelCache[url] = { push: function (f) { f(g.scene.clone()); } };
 			cbs.forEach(function (f, i) { f(i ? g.scene.clone() : g.scene); });
-		});
+		}, undefined, function (e) { console.error('Model failed to load: ' + url, e); });
 	}
 
 	function textTex(w, h) {
