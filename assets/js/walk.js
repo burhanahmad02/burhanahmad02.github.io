@@ -801,7 +801,7 @@
 		var gate = new THREE.Group();
 		gate.position.z = -2.2;
 		// a light strip set into a dark aluminium frame
-		var housing = std(0x0e0f12, { roughness: 0.28, metalness: 0.9 });
+		var housing = std(0x060607, { roughness: 0.5, metalness: 0.7, envMapIntensity: 0.45 });
 		[[-W / 2, H / 2, T, H], [W / 2, H / 2, T, H], [0, H, W + T, T]].forEach(function (b) {
 			var m = new THREE.Mesh(new THREE.BoxBufferGeometry(b[2], b[3], T), barMat);
 			m.position.set(b[0], b[1], 0.03); gate.add(m);
@@ -1383,8 +1383,9 @@
 				'  float shade = smoothstep(0.25, 0.6, a.g);',
 				// the trail: LEDs flicker off at random in proportion to how much shadow is left there
 				'  float trail = max(a.r - a.g, 0.0);',
-				'  float off = step(hash(id + floor(uTime * 9.0) * 1.37), trail * 0.55);',
-				'  float on = smoothstep(0.0, 0.2, uOn * 1.3 - hash(id * 0.71) * 0.3);',
+				// (ids kept small so the hash never rounds to exactly zero, which would switch idle LEDs off)
+				'  float off = trail > 0.01 ? step(hash(mod(id, 289.0) + mod(floor(uTime * 9.0), 97.0) * 1.37), trail * 0.55) : 0.0;',
+				'  float on = smoothstep(0.0, 0.2, uOn * 1.3 - hash(mod(id, 289.0) * 0.71) * 0.3);',
 				'  float shimmer = 0.86 + 0.14 * sin(w.x * 0.9 - uTime * 0.8 + w.y * 0.6);',
 				'  float lit = led * on * shimmer * (1.0 - shade) * (1.0 - off);',
 				'  vec3 base = vec3(0.004, 0.008, 0.02);',
