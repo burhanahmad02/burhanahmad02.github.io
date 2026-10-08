@@ -53,9 +53,16 @@
 			<div class="vignette"></div>
 		</div>
 
-		<div class="hud only-3d" aria-hidden="true">
-			<div class="track"><span class="track-fill"></span><span class="track-ticks"></span></div>
-			<p class="hud-chapter"></p>
+		<div class="hud only-3d">
+			<button class="hud-play" type="button" aria-label="Play the walk">
+				<svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8c0 .5.5.8.9.5l8.3-5.4c.4-.3.4-.8 0-1L5.4 2.1c-.4-.3-.9 0-.9.5z" /></svg>
+				<svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="0.8" /><rect x="9.5" y="2.5" width="3" height="11" rx="0.8" /></svg>
+			</button>
+			<div class="track" role="slider" tabindex="0" aria-label="Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+				<span class="track-fill"></span><span class="track-ticks" aria-hidden="true"></span>
+				<span class="track-tip" aria-hidden="true"><b></b><span></span></span>
+			</div>
+			<p class="hud-chapter" aria-hidden="true"></p>
 		</div>
 
 		<main class="stops">
@@ -64,7 +71,7 @@
 					<p class="kicker">Unity &amp; XR developer, Dubai</p>
 					<h1>Burhan<br />Ahmad</h1>
 					<p class="lede">Six years, two cities, from mobile games to rooms that react to people. Scroll and walk it with me, from Islamabad to Dubai.</p>
-					<p class="scroll-cue only-3d"><span class="cue-line"></span>Scroll to walk</p>
+					<p class="scroll-cue only-3d"><span class="cue-line"></span><span>Scroll to walk, or <button class="cue-play" type="button">press play</button></span></p>
 				</div>
 			</section>
 			<div id="work"></div>

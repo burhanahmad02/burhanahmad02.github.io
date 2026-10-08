@@ -22,7 +22,9 @@
 
 	var player = document.querySelector('.player');
 	var playerVideo = player.querySelector('video');
+	var playerHooks = {};
 	function openPlayer(stop) {
+		if (playerHooks.open) playerHooks.open();
 		var full = stop.getAttribute('data-full');
 		var clip = stop.getAttribute('data-video');
 		playerVideo.onerror = function () {
@@ -41,7 +43,7 @@
 	}
 	player.querySelector('.player-close').addEventListener('click', closePlayer);
 	player.addEventListener('click', function (e) { if (e.target === player) closePlayer(); });
-	player.addEventListener('close', function () { playerVideo.pause(); });
+	player.addEventListener('close', function () { playerVideo.pause(); if (playerHooks.close) playerHooks.close(); });
 	stops.forEach(function (s) {
 		var b = s.querySelector('.watch');
 		if (b) b.addEventListener('click', function () { openPlayer(s); });
@@ -1604,6 +1606,24 @@
 		// it climbs towards the back so the loop reads from eye level
 		var RING = { x: 0.6, z: -13.2, rx: 4.6, rz: 3.7, y: 2.5, tilt: 1.2 };
 		function ringE(x, z) { return Math.sqrt(sq((x - RING.x) / RING.rx) + sq((z - RING.z) / RING.rz)); }
+		// the ride pod and the flying cars fly their own loops too: the pod above the
+		// metro's track, one car circling the top of the tallest tower and the other
+		// sweeping round the edge of the shield
+		var FLY = {
+			pod: { x: 0.6, z: -13.2, rx: 4.75, rz: 3.85, y: 4.3, tilt: 0.5, amp: 0.1, v: 1.8, dir: 1, a: 0 },
+			carA: { x: 0.0, z: -13.4, rx: 1.7, rz: 1.3, y: 5.3, tilt: 0, amp: 0.12, v: 3.0, dir: -1, a: 1 },
+			carB: { x: 0.9, z: -12.8, rx: 5.6, rz: 4.6, y: 2.9, tilt: -0.4, amp: 0.2, v: 3.8, dir: -1, a: 2.5 }
+		};
+		function flyAt(P, a, out) { return out.set(P.x + Math.cos(a) * P.rx, P.y - P.tilt * Math.sin(a) + P.amp * Math.sin(a * 3 + P.rx), P.z + Math.sin(a) * P.rz); }
+		// how tall a tower may stand without a car clipping it
+		function headroom(x, z) {
+			var cap = 99;
+			[FLY.carA, FLY.carB].forEach(function (P) {
+				var u = (x - P.x) / P.rx, w = (z - P.z) / P.rz, e = Math.sqrt(u * u + w * w);
+				if (Math.abs(e - 1) * Math.min(P.rx, P.rz) < 0.75) cap = Math.min(cap, P.y - P.tilt * Math.sin(Math.atan2(w, u)) - P.amp - 0.5);
+			});
+			return cap;
+		}
 
 		var win = textTex(64, 128), wg = win.g;
 		wg.fillStyle = '#071a1a'; wg.fillRect(0, 0, 64, 128);
@@ -1619,7 +1639,8 @@
 			if (z > -7.4 || Math.abs(x - 0.0) < 0.7 && Math.abs(z + 13.4) < 0.9 || Math.abs(ringE(x, z) - 1) < 0.2) continue;
 			var w = 0.3 + rnd() * 0.42, hmax = domeH(x, z) * 0.8 - 0.3;
 			if (hmax < 0.6) continue;
-			var h = Math.min(hmax, 0.7 + hmax * Math.pow(rnd(), 1.4) * (1.1 - rr * 0.6));
+			var h = Math.min(hmax, headroom(x, z), 0.7 + hmax * Math.pow(rnd(), 1.4) * (1.1 - rr * 0.6));
+			if (h < 0.6) continue;
 			var m = new THREE.Mesh(new THREE.BoxBufferGeometry(w, h, w * (0.8 + rnd() * 0.4)), bmat);
 			m.position.set(x, h / 2, z); m.rotation.y = (rnd() - 0.5) * 0.4;
 			m.userData.h = h; city.add(m); towers.push(m);
@@ -1768,17 +1789,32 @@
 		st.hide = reset;
 
 		// the ride pod, the metro and the flying cars from the 360 VR film
-		var pod = new THREE.Group(), podBody = new THREE.Group(), metro = new THREE.Group(), cars = [];
-		var POD_D = [-3.2, 4.3, -10.4], POD_M = [-1.75, 2.2, -7.0], POD = mobile ? POD_M : POD_D;
-		pod.add(podBody); podBody.rotation.y = Math.PI - 0.6;
-		grp.add(pod);
-		var podGlow = new THREE.PointLight(0x7ffff0, 0, 6, 2); podGlow.position.set(0.3, 0.2, 1.2); pod.add(podGlow);
-		var podFill = new THREE.PointLight(0xffffff, 0, 7, 2); podFill.position.set(1.5, 1.4, 2.6); pod.add(podFill);
+		var pod = new THREE.Group(), podBody = new THREE.Group(), podLights = new THREE.Group(), metro = new THREE.Group(), cars = [];
+		pod.rotation.order = 'YXZ'; pod.add(podBody); grp.add(pod); grp.add(podLights);
+		// lit from our side whichever way it is facing
+		var podGlow = new THREE.PointLight(0x7ffff0, 0, 6, 2); podGlow.position.set(0.3, 0.2, 1.2); podLights.add(podGlow);
+		var podFill = new THREE.PointLight(0xffffff, 0, 7, 2); podFill.position.set(1.5, 1.4, 2.6); podLights.add(podFill);
+		// thrusters under the back of the pod (its nose is -z)
 		var thrust = [];
-		[-0.55, 0.55].forEach(function (x) {
+		[-0.6, 0.6].forEach(function (x) {
 			var f = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ map: glowTex, color: 0x5ffff0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-			f.position.set(x, -0.9, 0.3); f.scale.setScalar(0.6); pod.add(f); thrust.push(f);
+			f.position.set(x, -1.15, 1.4); podBody.add(f); thrust.push(f);
 		});
+		var _fp = new THREE.Vector3(), _fq = new THREE.Vector3();
+		// move along a loop at an even speed, facing the way it flies, pitching with
+		// the climb and banking into the turn; fwd is the model's nose (+z or -z)
+		function flyLoop(o, P, dt, fwd, lift) {
+			P.a += P.dir * P.v * dt / Math.max(0.3, Math.sqrt(sq(P.rx * Math.sin(P.a)) + sq(P.rz * Math.cos(P.a))));
+			flyAt(P, P.a, _fp); flyAt(P, P.a + P.dir * 0.02, _fq).sub(_fp);
+			var yaw = Math.atan2(fwd * _fq.x, fwd * _fq.z);
+			if (P.yaw !== undefined && dt > 0) {
+				var dy = yaw - P.yaw; dy = ((dy + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+				P.bank = damp(P.bank || 0, Math.max(-0.32, Math.min(0.32, dy / dt * 0.25)), 3, dt);
+			}
+			P.yaw = yaw;
+			o.position.set(_fp.x, _fp.y - lift, _fp.z);
+			o.rotation.set(-fwd * Math.atan2(_fq.y, Math.sqrt(_fq.x * _fq.x + _fq.z * _fq.z)), yaw, -fwd * (P.bank || 0));
+		}
 		var ringPts = [], ringLen = [0], RN = 240;
 		for (var a1 = 0; a1 <= RN; a1++) {
 			var an = a1 / RN * Math.PI * 2;
@@ -1804,7 +1840,8 @@
 		// the train from the film is skinned along its length, so it bends round the ring
 		var TRAIN = 0.13, trainBones = [], _rq = new THREE.Quaternion(), _rq2 = new THREE.Quaternion(), _ry = new THREE.Vector3(0, 1, 0), _rz = new THREE.Vector3(0, 0, 1), _rp = new THREE.Vector3(), _rp2 = new THREE.Vector3();
 		metro.scale.setScalar(TRAIN); grp.add(metro);
-		var CARS = [{ n: 'carA', c: [-879.59, 4.47, 584.64], len: 39.5 }, { n: 'carB', c: [-1077.0, 4.47, 963.4], len: 32.5 }];
+		// yaw turns each car's own length onto +z, undoing the angle it was parked at in the film's scene
+		var CARS = [{ n: 'carA', c: [-879.59, 4.47, 584.64], len: 39.5, yaw: 0.4846 }, { n: 'carB', c: [-1077.0, 4.47, 963.4], len: 32.5, yaw: -2.668 }];
 		st.lazy = function () {
 			loadModel('media/models/cockpit.glb', function (m) {
 				// centre it so it banks around its middle
@@ -1823,25 +1860,26 @@
 			CARS.forEach(function (cd, k) {
 				loadModel('media/models/cars.glb', function (m) {
 					var piv = new THREE.Group(), keep = null;
-					m.traverse(function (o) { if (o.name === cd.n && !keep && o.isMesh !== undefined) keep = o; });
+					// carB is a group of meshes, carA a single mesh
+					m.traverse(function (o) { if (o.name === cd.n && !keep) keep = o; });
 					m.traverse(function (o) { if (o.isMesh) { var p = o; var mine = false; while (p) { if (p === keep) mine = true; p = p.parent; } o.visible = mine; } });
 					m.position.set(-cd.c[0], -cd.c[1], -cd.c[2]);
-					piv.add(m); piv.scale.setScalar(3.0 / cd.len);
-					var holder = new THREE.Group(); holder.add(piv); grp.add(holder);
-					cars.push({ o: holder, k: k });
+					piv.add(m); piv.scale.setScalar(3.0 / cd.len); piv.rotation.y = cd.yaw;
+					var holder = new THREE.Group(); holder.rotation.order = 'YXZ'; holder.add(piv); grp.add(holder);
+					cars.push({ o: holder, P: k ? FLY.carB : FLY.carA });
 				});
 			});
 		};
 		st.update = function (t, life, dt) {
-			var fly = easeOut(smooth(0.05, 0.85, life));
-			POD = mobile ? POD_M : POD_D; podBody.scale.setScalar(mobile ? 0.55 : 0.78);
-			pod.visible = life > 0.01;
-			// the pod lifts off from deeper in the city, inside the shield
-			pod.position.set(POD[0] - (1 - fly) * 2.5, POD[1] + Math.sin(t * 1.1) * 0.12 - (1 - fly) * 2.0, POD[2] - (1 - fly) * 4);
-			pod.rotation.set(Math.sin(t * 0.8) * 0.03, Math.sin(t * 0.35) * 0.12, (1 - fly) * 0.25 + Math.sin(t * 0.9) * 0.04);
+			// the pod and the cars climb up into their loops as the city rises
+			var fly = easeOut(smooth(0.3, 0.85, life)), lift = (1 - fly) * 2.5;
+			pod.visible = podBody.children.length > 2 && fly > 0.01;
+			podBody.scale.setScalar(Math.max(0.001, fly) * (mobile ? 0.42 : 0.7));
+			flyLoop(pod, FLY.pod, dt, -1, lift);
+			podLights.position.copy(pod.position);
 			podGlow.intensity = 3.0 * smooth(0.4, 1, life);
 			podFill.intensity = 1.6 * smooth(0.4, 1, life);
-			thrust.forEach(function (f, j) { f.material.opacity = smooth(0.2, 0.8, life) * (0.75 + 0.25 * Math.sin(t * 17 + j)); f.lookAt(camera.position); });
+			thrust.forEach(function (f, j) { f.material.opacity = fly * (0.75 + 0.25 * Math.sin(t * 17 + j)); f.lookAt(camera.position); });
 			var kr = smooth(0.2, 0.7, life); ringGrp.scale.set(1, Math.max(0.001, kr), 1); ringGrp.visible = kr > 0.01;
 			metro.visible = kr > 0.98 && trainBones.length > 0;
 			if (metro.visible) {
@@ -1857,13 +1895,9 @@
 				});
 			}
 			cars.forEach(function (c) {
-				// flying cars loop between the towers, under the shield and clear of the text
-				var dir = c.k ? -1 : 1, sp = c.k ? 2.6 : 2.2, span = c.k ? 8 : 6;
-				var f = ((t * sp + c.k * 4) % span) / span;
-				c.o.position.set((c.k ? 2.0 : 1.6) + dir * (f - 0.5) * span, c.k ? (mobile ? 2.6 : 4.4) : (mobile ? 1.3 : 3.2), c.k ? -11.6 : -9.6);
-				c.o.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-				c.o.scale.setScalar(Math.max(0.001, smooth(0, 0.08, f) * smooth(1, 0.92, f)));
-				c.o.visible = life > 0.3;
+				flyLoop(c.o, c.P, dt, 1, lift);
+				c.o.scale.setScalar(Math.max(0.001, fly) * (mobile ? 0.7 : 1));
+				c.o.visible = fly > 0.01;
 			});
 			towers.forEach(function (m, j) { var k = smooth(j / 60, j / 60 + 0.5, life); m.scale.set(1, Math.max(0.001, k), 1); m.position.y = m.userData.h * k / 2; });
 			var kb = smooth(0.2, 0.8, life); burj.scale.set(1, Math.max(0.001, kb) * 0.84, 1);
@@ -2318,6 +2352,7 @@
 			if (i < 0) i = stops.indexOf(el.nextElementSibling);
 			if (i < 0) return;
 			e.preventDefault();
+			setPlaying(false);
 			window.scrollTo({ top: anchors[i], behavior: 'smooth' });
 		});
 	});
@@ -2377,12 +2412,187 @@
 	spaceTicks();
 	window.addEventListener('resize', spaceTicks);
 
+	/* ---------- Timeline: scrub it like a video, or let it play ---------- */
+
+	var track = document.querySelector('.track');
+	var tip = track.querySelector('.track-tip');
+	var playBtn = document.querySelector('.hud-play');
+	var tipLabels = stops.map(function (s, i) {
+		var k = kinds[i], h = s.querySelector('h2');
+		var name = k === 'intro' ? 'Start' : k === 'about' ? 'About' : k === 'contact' ? 'Contact' : (s.getAttribute('data-gate-label') || (h ? h.textContent : ''));
+		return { year: s.getAttribute('data-year') || '', name: name.replace(/\s+/g, ' ').trim() };
+	});
+	var scrubbing = false, lastResize = 0, tipTimer = 0;
+	window.addEventListener('resize', function () { lastResize = performance.now(); });
+
+	// the inverse of scrollToS: where the page has to be for him to stand at distance s
+	function sToScroll(s) {
+		if (s <= 0) return 0;
+		if (s >= END) return anchors[N - 1];
+		var i = Math.min(N - 2, Math.floor(s / S)), e = (s - stopS(i)) / S, lo = 0, hi = 1;
+		for (var k = 0; k < 22; k++) {
+			var m = (lo + hi) / 2;
+			if (m - 0.7 * Math.sin(2 * Math.PI * m) / (2 * Math.PI) < e) lo = m; else hi = m;
+		}
+		return anchors[i] + (lo + hi) / 2 * (anchors[i + 1] - anchors[i]);
+	}
+	function seek(s) {
+		s = Math.max(0, Math.min(END, s));
+		var y = Math.round(sToScroll(s));
+		auto.lastY = y;
+		window.scrollTo(0, y);
+		return s;
+	}
+	function fracAt(e) {
+		var r = track.getBoundingClientRect();
+		return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+	}
+	// a click within a few pixels of a stop lands exactly on it
+	function snapS(f) {
+		var s = f * END, i = Math.round(s / S), px = track.clientWidth / END;
+		return Math.abs(s - stopS(i)) * px < 9 ? stopS(i) : s;
+	}
+	function showTip(f) {
+		var i = Math.max(0, Math.min(N - 1, Math.round(f * END / S))), lb = tipLabels[i];
+		tip.firstChild.textContent = lb.year;
+		tip.lastChild.textContent = lb.name;
+		var r = track.getBoundingClientRect(), w = tip.offsetWidth, x = f * r.width;
+		x = Math.max(w / 2 + 8 - r.left, Math.min(innerWidth - 8 - w / 2 - r.left, x));
+		tip.style.left = x + 'px';
+		tip.classList.add('is-on');
+	}
+	function hideTip() { tip.classList.remove('is-on'); }
+
+	track.addEventListener('pointerdown', function (e) {
+		if (e.pointerType === 'mouse' && e.button !== 0) return;
+		e.preventDefault();
+		track.focus({ preventScroll: true });
+		scrubbing = true;
+		root.classList.add('is-scrubbing');
+		try { track.setPointerCapture(e.pointerId); } catch (err) {}
+		var f = fracAt(e);
+		seek(snapS(f));
+		showTip(f);
+	});
+	track.addEventListener('pointermove', function (e) {
+		var f = fracAt(e);
+		if (scrubbing) { seek(f * END); showTip(f); }
+		else if (e.pointerType === 'mouse') showTip(f);
+	});
+	function endScrub(e) {
+		if (!scrubbing) return;
+		scrubbing = false;
+		root.classList.remove('is-scrubbing');
+		clearTimeout(tipTimer);
+		if (e.pointerType !== 'mouse') tipTimer = setTimeout(function () { if (!scrubbing) hideTip(); }, 700);
+		else if (e.type !== 'pointerup') hideTip();
+		if (auto.on) plan(scrollToS(window.scrollY), false);
+	}
+	track.addEventListener('pointerup', endScrub);
+	track.addEventListener('pointercancel', endScrub);
+	track.addEventListener('lostpointercapture', endScrub);
+	track.addEventListener('pointerleave', function (e) { if (!scrubbing && e.pointerType === 'mouse') hideTip(); });
+	track.addEventListener('keydown', function (e) {
+		var cur = scrollToS(window.scrollY) / S, k = e.key, to = -1;
+		if (k === 'ArrowRight' || k === 'ArrowUp' || k === 'PageDown') to = Math.min(N - 1, Math.floor(cur + 0.05) + 1);
+		else if (k === 'ArrowLeft' || k === 'ArrowDown' || k === 'PageUp') to = Math.max(0, Math.ceil(cur - 0.05) - 1);
+		else if (k === 'Home') to = 0;
+		else if (k === 'End') to = N - 1;
+		if (to < 0) return;
+		e.preventDefault();
+		seek(stopS(to));
+		if (auto.on) plan(stopS(to), false);
+	});
+
+	// Autoplay walks stop to stop at an even pace and lingers at each one.
+	// It drives the page scroll, so the copy and the 3D stay in step, and any
+	// scroll of the user's own takes back control.
+	var LEG = 5.2;   // seconds for one stop-to-stop walk
+	var auto = { on: false, resume: false, s: 0, from: 0, to: 0, t: 0, dur: 0, dwell: false, lastY: 0 };
+	function dwellFor(i) {
+		var k = kinds[i];
+		return k === 'intro' ? 1.2 : k === 'gate' ? 2.6 : k === 'about' ? 6 : k === 'contact' ? 0 : 6.5;
+	}
+	// accelerate over the first fifth, an even stride, then ease into the stop
+	function trapezoid(u) {
+		var a = 0.2, k = 2 * a * (1 - a);
+		if (u < a) return u * u / k;
+		if (u > 1 - a) return 1 - (1 - u) * (1 - u) / k;
+		return (u - a / 2) / (1 - a);
+	}
+	function plan(s0, fresh) {
+		var j = Math.max(0, Math.min(N - 1, Math.ceil(s0 / S - 0.02)));
+		auto.t = 0;
+		if (Math.abs(s0 - stopS(j)) < S * 0.02) {
+			auto.dwell = true;
+			auto.s = auto.from = auto.to = stopS(j);
+			auto.dur = fresh ? Math.min(0.6, dwellFor(j)) : dwellFor(j);
+		} else {
+			auto.dwell = false;
+			auto.s = auto.from = s0;
+			auto.to = stopS(j);
+			auto.dur = Math.max(0.9, LEG * (auto.to - s0) / S);
+		}
+	}
+	function stepAuto(dt) {
+		auto.t += dt;
+		if (auto.dwell) {
+			if (auto.t >= auto.dur) {
+				var i = Math.round(auto.from / S);
+				if (i >= N - 1) { setPlaying(false); return; }
+				auto.dwell = false; auto.t = 0;
+				auto.to = stopS(i + 1);
+				auto.dur = LEG;
+			}
+		} else {
+			var u = Math.min(1, auto.t / auto.dur);
+			auto.s = auto.from + (auto.to - auto.from) * trapezoid(u);
+			if (u >= 1) {
+				auto.dwell = true; auto.t = 0;
+				auto.s = auto.from = auto.to;
+				auto.dur = dwellFor(Math.round(auto.to / S));
+			}
+		}
+		var y = Math.round(sToScroll(auto.s));
+		auto.lastY = y;
+		if (Math.abs(y - window.scrollY) >= 1) window.scrollTo(0, y);
+	}
+	function setPlaying(on) {
+		if (on === auto.on) return;
+		auto.on = on;
+		root.classList.toggle('is-playing', on);
+		playBtn.setAttribute('aria-label', on ? 'Pause the walk' : 'Play the walk');
+		if (!on) return;
+		var s0 = scrollToS(window.scrollY);
+		if (s0 >= END - 0.5) { s0 = 0; seek(0); }   // from the end, play again from the start
+		plan(s0, true);
+		auto.lastY = Math.round(window.scrollY);
+	}
+	playBtn.addEventListener('click', function () { setPlaying(!auto.on); });
+	var cuePlay = document.querySelector('.cue-play');
+	if (cuePlay) cuePlay.addEventListener('click', function () { setPlaying(true); });
+	playerHooks.open = function () { auto.resume = auto.on; setPlaying(false); };
+	playerHooks.close = function () { if (auto.resume) { auto.resume = false; setPlaying(true); } };
+
+	// the user's own scrolling pauses it
+	function userScroll() { if (auto.on && !scrubbing) { auto.resume = false; setPlaying(false); } }
+	window.addEventListener('wheel', function (e) { if (e.deltaY) userScroll(); }, { passive: true });
+	window.addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.hud'))) userScroll(); }, { passive: true });
+	window.addEventListener('keydown', function (e) {
+		if (e.target === track || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName)) return;
+		if ([' ', 'PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', 'Home', 'End'].indexOf(e.key) >= 0) userScroll();
+	});
+	window.addEventListener('scroll', function () {
+		// a scroll that is not ours (the scrollbar, a nav link): hand back control
+		if (auto.on && !scrubbing && performance.now() - lastResize > 500 && Math.abs(window.scrollY - auto.lastY) > 4) userScroll();
+	}, { passive: true });
+
 	/* ---------- Loop ---------- */
 
 	var panels = stops.map(function (s) { return s.querySelector('.panel'); });
 	var hudFill = document.querySelector('.track-fill');
 	var hudChapter = document.querySelector('.hud-chapter');
-	var lastChapter = null;
+	var lastChapter = null, lastPct = -1, lastNear = -1;
 	var charS = 0, lastStepSide = 0, lastT = performance.now();
 	var tmpColor = new THREE.Color(), led = new THREE.Color(), bgCol = new THREE.Color(), white = new THREE.Color(1, 1, 1);
 	var camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), camX = 0;
@@ -2423,11 +2633,12 @@
 		clock += dt;
 		var t = clock;
 
-		var targetS = scrollToS(window.scrollY);
-		// a jump across several stops (a nav link) skips ahead instead of sprinting
+		if (auto.on && !scrubbing) stepAuto(dt);
+		var targetS = auto.on && !scrubbing ? auto.s : scrollToS(window.scrollY);
+		// a jump across several stops (a nav link, a click on the timeline) skips ahead instead of sprinting
 		if (Math.abs(targetS - charS) > S * 2.5) charS = targetS - Math.sign(targetS - charS) * S * 0.9;
 		var prevS = charS;
-		charS = damp(charS, targetS, 2.8, dt);
+		charS = damp(charS, targetS, scrubbing ? 6 : 2.8, dt);
 		var ds = charS - prevS;
 		// how hard he is walking, from how fast he covers ground
 		var speed = Math.abs(ds) / Math.max(dt, 1e-3);
@@ -2608,6 +2819,9 @@
 		ticks.forEach(function (tk) { var past = charS >= tk.s - 0.5; if (tk.past !== past) { tk.past = past; tk.el.classList.toggle('is-past', past); } });
 		var ch = near ? (stops[near.i].getAttribute('data-chapter') || '') : '';
 		if (ch !== lastChapter) { lastChapter = ch; hudChapter.textContent = ch; }
+		var pct = Math.round(charS / END * 100);
+		if (pct !== lastPct) { lastPct = pct; track.setAttribute('aria-valuenow', pct); }
+		if (near && near.i !== lastNear) { lastNear = near.i; track.setAttribute('aria-valuetext', tipLabels[near.i].year + ', ' + tipLabels[near.i].name); }
 
 		if (composer) composer.render(dt); else renderer.render(scene, camera);
 		requestAnimationFrame(frame);
