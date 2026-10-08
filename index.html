@@ -1,25 +1,26 @@
 <!DOCTYPE HTML>
 <!--
-	Burhan Ahmad, walk-through portfolio.
-	Scrolling walks a 3D Burhan along an LED floor. Each project's scene wakes
-	up as he reaches it, and its footage plays on the screen behind him.
-	Uses the bundled Three.js r124, the clips in media/hq and the glTF models
-	in media/avatar and media/models. The previous homepage is video-wall.html
-	and the original site is old.html.
+	Burhan Ahmad, portfolio: Beyond the Screen.
+	Scrolling walks a 3D Burhan through his career as an exhibition, from a
+	lit portal in 2017 to his current XR work. Each project is shown large with
+	its real footage, and View selected work opens the same projects as a
+	gallery. Uses the bundled Three.js r124, the clips in media/hq and the glTF
+	models in media/avatar and media/models. No build step.
 -->
 <html lang="en">
 	<head>
 		<title>Burhan Ahmad · Unity &amp; XR Developer</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="description" content="Burhan Ahmad, Unity and XR developer in Dubai. Scroll to walk through his installations, XR work and games." />
-		<meta property="og:title" content="Burhan Ahmad · Unity & XR Developer" />
-		<meta property="og:description" content="Interactive installations, XR apps and games, built in Unity." />
+		<meta name="description" content="Burhan Ahmad, Unity and XR developer in Dubai. From mobile games to interactive installations and XR: experiences people can step into." />
+		<meta name="theme-color" content="#090d14" />
+		<meta property="og:title" content="Burhan Ahmad · Beyond the Screen" />
+		<meta property="og:description" content="Unity and XR developer in Dubai. From games to worlds you can step into." />
 		<meta property="og:image" content="media/hq/qadsiah.jpg" />
 		<link rel="icon" href="images/burhann.ico" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
 		<link rel="stylesheet" href="assets/css/walk.css" />
 		<script>
 			(function () {
@@ -38,10 +39,12 @@
 		</script>
 	</head>
 	<body>
+		<a class="skip" href="#main">Skip to content</a>
 		<header class="nav">
 			<a class="nav-name" href="#top">Burhan Ahmad</a>
 			<nav aria-label="Sections">
-				<a href="#work">Work</a>
+				<a href="#work" class="js-work">Work</a>
+				<a href="#journey">Journey</a>
 				<a href="#about">About</a>
 				<a href="#contact">Contact</a>
 				<a href="Burhan_Ahmad_CV.pdf" target="_blank" rel="noopener">CV</a>
@@ -54,46 +57,49 @@
 		</div>
 
 		<div class="hud only-3d">
-			<button class="hud-play" type="button" aria-label="Play the walk">
+			<button class="hud-play" type="button" aria-label="Play the journey">
 				<svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8c0 .5.5.8.9.5l8.3-5.4c.4-.3.4-.8 0-1L5.4 2.1c-.4-.3-.9 0-.9.5z" /></svg>
 				<svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="0.8" /><rect x="9.5" y="2.5" width="3" height="11" rx="0.8" /></svg>
 			</button>
-			<div class="track" role="slider" tabindex="0" aria-label="Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+			<div class="track" role="slider" tabindex="0" aria-label="Journey timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
 				<span class="track-fill"></span><span class="track-ticks" aria-hidden="true"></span>
 				<span class="track-tip" aria-hidden="true"><b></b><span></span></span>
 			</div>
-			<p class="hud-chapter" aria-hidden="true"></p>
+			<p class="hud-chapter" aria-hidden="true"><span class="hud-cue"><span class="mouse"></span>Scroll to explore</span><span class="hud-name"></span></p>
 		</div>
 
-		<main class="stops">
+		<main class="stops" id="main">
 			<section class="stop stop-intro" id="top" data-chapter="Start" data-year="2017" data-scene="intro">
-				<div class="panel">
-					<p class="kicker">Unity &amp; XR developer, Dubai</p>
-					<h1>Burhan<br />Ahmad</h1>
-					<p class="lede">Six years, two cities, from mobile games to rooms that react to people. Scroll and walk it with me, from Islamabad to Dubai.</p>
-					<p class="scroll-cue only-3d"><span class="cue-line"></span><span>Scroll to walk, or <button class="cue-play" type="button">press play</button></span></p>
-				</div>
-			</section>
-			<div id="work"></div>
-
-			<section class="stop stop-gate" id="y2017" data-scene="gate" data-chapter="2017 · Islamabad" data-year="2017" data-gate-year="2017" data-gate-label="Computer Science">
-				<div class="panel">
-					<p class="kicker">Islamabad, Pakistan</p>
-					<p class="gate-year">2017</p>
-					<h2>Computer Science</h2>
-					<p class="meta">Bachelor of Computer Science, Feb 2017 – May 2021</p>
-					<ul class="gate-notes">
-						<li>Four years of computer science in Islamabad, where the code started.</li>
-					</ul>
+				<div class="panel panel-hero">
+					<p class="eyebrow">Unity / XR / Interactive experiences</p>
+					<h1>Beyond<br />the screen</h1>
+					<p class="hero-sub">From games to worlds you can step into.</p>
+					<p class="hero-text">From mobile games to immersive worlds and real-world interactive installations. I'm a Unity and XR developer creating experiences people can step into.</p>
+					<div class="hero-actions">
+						<a class="btn btn-primary js-explore" href="#journey">Explore my journey<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></a>
+						<a class="btn btn-ghost js-work" href="#work">View selected work<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></a>
+					</div>
 				</div>
 			</section>
 
-			<section class="stop stop-gate" id="y2020" data-scene="gate" data-chapter="2020 · Spartans Global" data-year="2020" data-gate-year="2020" data-gate-label="Spartans Global">
+			<div id="journey"></div>
+			<section class="stop stop-gate" id="y2017" data-scene="gate" data-chapter="01 · The Beginning" data-year="2017" data-gate-year="2017" data-gate-label="The Beginning" data-tick="2017">
 				<div class="panel">
-					<p class="kicker">Islamabad, Pakistan</p>
-					<p class="gate-year">2020</p>
-					<h2>Spartans Global</h2>
-					<p class="meta">Unity Game Developer, Dec 2020 – Apr 2022</p>
+					<p class="eyebrow">Chapter 01 · 2017</p>
+					<p class="gate-year" aria-hidden="true">2017</p>
+					<h2>The Beginning</h2>
+					<p class="gate-lede">Computer Science in Islamabad, and a curiosity about how software and digital worlds work.</p>
+					<p class="gate-role"><strong>Bachelor of Computer Science</strong><span>Islamabad, Pakistan · Feb 2017 – May 2021</span></p>
+				</div>
+			</section>
+
+			<section class="stop stop-gate" id="y2020" data-scene="gate" data-chapter="02 · Building Worlds" data-year="2020" data-gate-year="2020" data-gate-label="Building Worlds" data-tick="2020">
+				<div class="panel">
+					<p class="eyebrow">Chapter 02 · 2020 – 2022</p>
+					<p class="gate-year" aria-hidden="true">2020</p>
+					<h2>Building Worlds</h2>
+					<p class="gate-lede">My first Unity years: mobile games, gameplay mechanics, physics and the systems behind them.</p>
+					<p class="gate-role"><strong>Unity Game Developer, Spartans Global</strong><span>Islamabad, Pakistan · Dec 2020 – Apr 2022</span></p>
 					<ul class="gate-notes">
 						<li>Mobile games: gameplay, physics, UI and performance.</li>
 						<li>Data-driven systems with ScriptableObjects, Addressables and JSON.</li>
@@ -101,208 +107,431 @@
 				</div>
 			</section>
 
-			<section class="stop" id="p-roaddraw" data-chapter="2020 · Spartans Global" data-year="2021" data-scene="road" data-video="media/hq/road-draw.mp4" data-poster="media/hq/road-draw.jpg" data-full="images/carpath.mp4" data-ar="1280/556">
-				<div class="panel">
-					<p class="kicker">Games, 2020 – 2023</p>
-					<h2>Car Path Draw</h2>
-					<p class="meta">Mobile game</p>
-					<p>Draw a path and the car follows it, getting past blades, spikes and gaps on its way to the goal.</p>
-					<p class="tools">Unity, C#, 2D physics</p>
-					<button class="watch" type="button">Watch the video</button>
+			<section class="stop stop-project" id="p-roaddraw" data-scene="road" data-chapter="02 · Building Worlds" data-year="2021" data-category="games" data-order="14" data-video="media/hq/road-draw.mp4" data-poster="media/hq/road-draw.jpg" data-full="images/carpath.mp4" data-ar="1280/556">
+				<div class="panel panel-exhibit is-wide">
+					<figure class="exhibit-media" style="--ar: 1280/556">
+						<img class="exhibit-back" src="media/hq/road-draw.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/road-draw.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Car Path Draw video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Game · 2021</p>
+						<h2>Car Path Draw</h2>
+						<p class="exhibit-desc">Draw a path and the car follows it, getting past blades, spikes and gaps on its way to the goal.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Mobile game</dd></div>
+							<div><dt>Built with</dt><dd>Unity, C#, 2D physics</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-drift" data-chapter="2020 · Spartans Global" data-year="2021" data-scene="drift" data-video="media/hq/drift.mp4" data-poster="media/hq/drift.jpg" data-full="images/cargame.mp4" data-ar="1280/720">
-				<div class="panel">
-					<p class="kicker">Games, 2020 – 2023</p>
-					<h2>Custom car controller</h2>
-					<p class="meta">Vehicle physics</p>
-					<p>My own car controller, with drifting, tyre marks and a live speedometer.</p>
-					<p class="tools">Unity, C#, vehicle physics</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-drift" data-scene="drift" data-chapter="02 · Building Worlds" data-year="2021" data-category="games" data-order="13" data-video="media/hq/drift.mp4" data-poster="media/hq/drift.jpg" data-full="images/cargame.mp4" data-ar="1280/720">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 1280/720">
+						<img class="exhibit-back" src="media/hq/drift.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/drift.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Custom Car Controller video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Game · 2021</p>
+						<h2>Custom Car Controller</h2>
+						<p class="exhibit-desc">My own car controller, with drifting, tyre marks and a live speedometer.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Vehicle physics</dd></div>
+							<div><dt>Built with</dt><dd>Unity, C#, vehicle physics</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop stop-gate" id="y2022" data-scene="gate" data-chapter="2022 · GameEver Studio" data-year="2022" data-gate-year="2022" data-gate-label="GameEver Studio">
+
+			<section class="stop stop-gate" id="y2022" data-scene="gate" data-chapter="02 · Building Worlds" data-year="2022" data-gate-year="2022" data-gate-label="Dubai">
 				<div class="panel">
-					<p class="kicker">Moved to Dubai, UAE</p>
-					<p class="gate-year">2022</p>
+					<p class="eyebrow">Chapter 02 · Moving to Dubai</p>
+					<p class="gate-year" aria-hidden="true">2022</p>
 					<h2>GameEver Studio</h2>
-					<p class="meta">Unity Game Developer, Apr 2022 – Mar 2023</p>
+					<p class="gate-lede">A move to Dubai, and bigger games: first-person shooters and 2D titles.</p>
+					<p class="gate-role"><strong>Unity Game Developer, GameEver Studio</strong><span>Dubai, UAE · Apr 2022 – Mar 2023</span></p>
 					<ul class="gate-notes">
 						<li>FPS and 2D games: enemy AI, gameplay, UI, VFX and shaders.</li>
 						<li>Cut 30 MB from the build through asset optimisation.</li>
+						<li>Data-driven gameplay systems with ScriptableObjects.</li>
 					</ul>
 				</div>
 			</section>
 
-			<section class="stop" id="p-somnolent" data-chapter="2022 · GameEver Studio" data-year="2022" data-scene="shooter" data-video="media/hq/somnolent.mp4" data-poster="media/hq/somnolent.jpg" data-full="images/crosshair.mp4" data-ar="1280/616">
-				<div class="panel">
-					<p class="kicker">Games, 2020 – 2023</p>
-					<h2>FPS Sci-Fi Shooter</h2>
-					<p class="meta">Offline first-person shooter</p>
-					<p>Full FPS controls, weapon selection and enemies that grow stronger each level, plus achievements, selectable crosshairs and a shooting range.</p>
-					<p class="tools">Unity, C#, ScriptableObjects</p>
-					<button class="watch" type="button">Watch the video</button>
+			<section class="stop stop-project" id="p-somnolent" data-scene="shooter" data-chapter="02 · Building Worlds" data-year="2022" data-category="games" data-order="12" data-video="media/hq/somnolent.mp4" data-poster="media/hq/somnolent.jpg" data-full="images/crosshair.mp4" data-ar="1280/616">
+				<div class="panel panel-exhibit is-wide">
+					<figure class="exhibit-media" style="--ar: 1280/616">
+						<img class="exhibit-back" src="media/hq/somnolent.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/somnolent.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the FPS Sci-Fi Shooter video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Game · 2022</p>
+						<h2>FPS <span class="nw">Sci-Fi</span> Shooter</h2>
+						<p class="exhibit-desc">Full FPS controls, weapon selection and enemies that grow stronger each level, plus achievements, selectable crosshairs and a shooting range.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Offline first-person shooter</dd></div>
+							<div><dt>Built with</dt><dd>Unity, C#, ScriptableObjects</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop stop-gate" id="y2023" data-scene="gate" data-chapter="2023 · Qubit Events" data-year="2023" data-gate-year="2023" data-gate-label="Qubit Events Management">
+
+			<section class="stop stop-gate" id="y2023" data-scene="gate" data-chapter="03 · Beyond the Screen" data-year="2023" data-gate-year="2023" data-gate-label="Beyond the Screen" data-tick="2023">
 				<div class="panel">
-					<p class="kicker">Dubai, UAE</p>
-					<p class="gate-year">2023</p>
-					<h2>Qubit Events Management</h2>
-					<p class="meta">Interactive Software Developer, Mar 2023 – now</p>
+					<p class="eyebrow">Chapter 03 · 2023 – 2024</p>
+					<p class="gate-year" aria-hidden="true">2023</p>
+					<h2>Beyond the Screen</h2>
+					<p class="gate-lede">Unity left the screen and moved into real spaces, working with cameras, tracking, sensors, LED displays and people.</p>
+					<p class="gate-role"><strong>Interactive Software Developer, Qubit Events Management</strong><span>Dubai, UAE · Mar 2023 – now</span></p>
 					<ul class="gate-notes">
-						<li>Installations for brands and events: LED floors and walls, kiosks, tracking.</li>
-						<li>Hugo Boss at Dubai Mall: real-time shadows generated from visitor movement.</li>
-						<li>MediaPipe and YOLO tracking, Arduino-driven motion.</li>
+						<li>Installations for brands and festivals: LED floors and walls, kiosks and tracking.</li>
+						<li>MediaPipe and YOLO models connected to Unity for real-time tracking.</li>
+						<li>Hybrid builds with Unity WebGL, three.js, p5.js and Arduino-driven motors.</li>
 					</ul>
 				</div>
 			</section>
 
-			<section class="stop" id="p-hugoboss" data-chapter="2023 · Qubit Events" data-year="2023" data-scene="shadow" data-video="media/hq/hugo-boss.mp4" data-poster="media/hq/hugo-boss.jpg" data-full="media/hq/hugo-boss.mp4" data-ar="640/360">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Hugo Boss interactive shadows</h2>
-					<p class="meta">Dubai Mall · People detection</p>
-					<p>With a teammate at BriteMinds I built a custom human detection model, then used its data in Unity to turn passers-by into live shadows with particles and keyframe animation.</p>
-					<p class="tools">Unity, custom detection model, particle systems</p>
-					<button class="watch" type="button">Watch the video</button>
+			<section class="stop stop-project" id="p-hugoboss" data-scene="shadow" data-chapter="03 · Beyond the Screen" data-year="2023" data-category="installations" data-order="3" data-video="media/hq/hugo-boss.mp4" data-poster="media/hq/hugo-boss.jpg" data-full="media/hq/hugo-boss.mp4" data-ar="640/360">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 640/360">
+						<img class="exhibit-back" src="media/hq/hugo-boss.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/hugo-boss.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Hugo Boss Interactive Shadows video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2023</p>
+						<h2>Hugo Boss Interactive Shadows</h2>
+						<p class="exhibit-desc">With a teammate at BriteMinds I built a custom human detection model, then used its data in Unity to turn passers-by into live shadows with particles and keyframe animation.</p>
+						<dl class="facts">
+							<div><dt>Client</dt><dd>Hugo Boss</dd></div>
+							<div><dt>Location</dt><dd>Dubai Mall</dd></div>
+							<div><dt>Built with</dt><dd>Unity, custom detection model, particle systems</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+						<div class="case-more" hidden>
+							<h3>My contribution</h3>
+							<p>A custom human detection model, built with a teammate at BriteMinds, and the Unity side that turns its data into real-time shadows, particles and keyframe animation.</p>
+							<h3>How it works</h3>
+							<p>People detection follows visitors as they walk past, and their movement drives the shadows on the installation in real time.</p>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-qadsiah" data-chapter="2023 · Qubit Events" data-year="2023" data-scene="court" data-video="media/hq/qadsiah.mp4" data-poster="media/hq/qadsiah.jpg" data-full="images/Qadsiah.mp4" data-ar="640/360">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Qadsiah Festival Floor</h2>
-					<p class="meta">Riyadh, Saudi Arabia · Interactive floor</p>
-					<p>A custom air hockey game played on an interactive floor, with custom particle effects.</p>
-					<p class="tools">Unity, people tracking, particle effects</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-qadsiah" data-scene="court" data-chapter="03 · Beyond the Screen" data-year="2023" data-category="installations" data-order="6" data-video="media/hq/qadsiah.mp4" data-poster="media/hq/qadsiah.jpg" data-full="images/Qadsiah.mp4" data-ar="640/360">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 640/360">
+						<img class="exhibit-back" src="media/hq/qadsiah.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/qadsiah.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Qadsiah Festival Floor video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2023</p>
+						<h2>Qadsiah Festival Floor</h2>
+						<p class="exhibit-desc">A custom air hockey game played on an interactive floor, with custom particle effects.</p>
+						<dl class="facts">
+							<div><dt>Location</dt><dd>Riyadh, Saudi Arabia</dd></div>
+							<div><dt>Type</dt><dd>Interactive floor game</dd></div>
+							<div><dt>Built with</dt><dd>Unity, people tracking, particle effects</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-loewe" data-chapter="2023 · Qubit Events" data-year="2023" data-scene="water" data-video="media/hq/loewe.mp4" data-poster="media/hq/loewe.jpg" data-full="images/Loewe.mp4" data-ar="640/1138">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Loewe Interactive Floor</h2>
-					<p class="meta">Dubai Mall · With artist Seph Li</p>
-					<p>Particle effects that show the nature of water, with ripples, a magnetic field and a vortex, inspired by Seph Li's ink-based art. It handles 10 to 15 visitors at once.</p>
-					<p class="tools">Unity, people tracking, particle effects</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-loewe" data-scene="water" data-chapter="03 · Beyond the Screen" data-year="2023" data-category="installations" data-order="4" data-video="media/hq/loewe.mp4" data-poster="media/hq/loewe.jpg" data-full="images/Loewe.mp4" data-ar="640/1138">
+				<div class="panel panel-exhibit is-tall">
+					<figure class="exhibit-media" style="--ar: 640/1138">
+						<img class="exhibit-back" src="media/hq/loewe.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/loewe.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Loewe Interactive Floor video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2023</p>
+						<h2>Loewe Interactive Floor</h2>
+						<p class="exhibit-desc">Particle effects that show the nature of water, with ripples, a magnetic field and a vortex, inspired by Seph Li&#x27;s ink-based art.</p>
+						<dl class="facts">
+							<div><dt>Location</dt><dd>Dubai Mall</dd></div>
+							<div><dt>With</dt><dd>Artist Seph Li</dd></div>
+							<div><dt>Built with</dt><dd>Unity, people tracking, particle effects</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+						<div class="case-more" hidden>
+							<h3>Scale</h3>
+							<p>The floor handles 10 to 15 visitors at once.</p>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-lusail" data-chapter="2023 · Qubit Events" data-year="2023" data-scene="fireworks" data-video="media/hq/lusail.mp4" data-poster="media/hq/lusail.jpg" data-full="media/hq/lusail.mp4" data-ar="848/480">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Luminous Interactive Floor</h2>
-					<p class="meta">Lusail Festival, Doha · With Georgie Pinn</p>
-					<p>For a lights festival in Qatar, with artist Georgie Pinn and Unity developer Nathan Clarkson, I made custom particle effects of fireworks in harmony, handling 10 to 15 visitors at once.</p>
-					<p class="tools">Unity, people tracking, particle effects</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-lusail" data-scene="fireworks" data-chapter="03 · Beyond the Screen" data-year="2023" data-category="installations" data-order="5" data-video="media/hq/lusail.mp4" data-poster="media/hq/lusail.jpg" data-full="media/hq/lusail.mp4" data-ar="848/480">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 848/480">
+						<img class="exhibit-back" src="media/hq/lusail.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/lusail.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Luminous Interactive Floor video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2023</p>
+						<h2>Luminous Interactive Floor</h2>
+						<p class="exhibit-desc">For a lights festival in Qatar I made custom particle effects of fireworks in harmony, handling 10 to 15 visitors at once.</p>
+						<dl class="facts">
+							<div><dt>Location</dt><dd>Lusail Festival, Doha</dd></div>
+							<div><dt>With</dt><dd>Artist Georgie Pinn and Unity developer Nathan Clarkson</dd></div>
+							<div><dt>Built with</dt><dd>Unity, people tracking, particle effects</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-forest" data-chapter="2023 · Qubit Events" data-year="2024" data-scene="forest" data-video="media/hq/forest-room.mp4" data-poster="media/hq/forest-room.jpg" data-full="images/Mixed1.mp4" data-ar="854/480">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Forest room</h2>
-					<p class="meta">Immersive LED room · Real-time Unity</p>
-					<p>A stylised forest rendered in real time in Unity and shown across LED panels around the room.</p>
-					<p class="tools">Unity, LED wall, real-time rendering</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-forest" data-scene="forest" data-chapter="03 · Beyond the Screen" data-year="2024" data-category="installations" data-order="7" data-video="media/hq/forest-room.mp4" data-poster="media/hq/forest-room.jpg" data-full="images/Mixed1.mp4" data-ar="854/480">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 854/480">
+						<img class="exhibit-back" src="media/hq/forest-room.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/forest-room.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Forest Room video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2024</p>
+						<h2>Forest Room</h2>
+						<p class="exhibit-desc">A stylised forest rendered in real time in Unity and shown across LED panels around the room.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Immersive LED room</dd></div>
+							<div><dt>Built with</dt><dd>Unity, LED wall, real-time rendering</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-tryon" data-chapter="2023 · Qubit Events" data-year="2024" data-scene="tryon" data-video="media/hq/ar-tryon.mp4" data-poster="media/hq/ar-tryon.jpg" data-full="images/AR-TryOn.mp4" data-ar="1280/720">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>AR Try-On</h2>
-					<p class="meta">Face tracking · Photo by email</p>
-					<p>MediaPipe finds the eyes and nose, and the 3D glasses are sized to fit each face. Visitors take a photo, and a Node.js service turns it into an image and emails it to them.</p>
-					<p class="tools">Unity, MediaPipe, Node.js</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-tryon" data-scene="tryon" data-chapter="03 · Beyond the Screen" data-year="2024" data-category="installations xr" data-order="8" data-video="media/hq/ar-tryon.mp4" data-poster="media/hq/ar-tryon.jpg" data-full="images/AR-TryOn.mp4" data-ar="1280/720">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 1280/720">
+						<img class="exhibit-back" src="media/hq/ar-tryon.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/ar-tryon.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the AR Try-On video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2024</p>
+						<h2>AR <span class="nw">Try-On</span></h2>
+						<p class="exhibit-desc">MediaPipe finds the eyes and nose, and the 3D glasses are sized to fit each face. Visitors take a photo, and a Node.js service turns it into an image and emails it to them.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Face-tracking AR</dd></div>
+							<div><dt>Built with</dt><dd>Unity, MediaPipe, Node.js</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-tennis" data-chapter="2023 · Qubit Events" data-year="2024" data-scene="tennis" data-video="media/hq/bowling.mp4" data-poster="media/hq/bowling.jpg" data-full="images/537935373-VID-20231011-WA0010.mp4" data-ar="480/560">
-				<div class="panel">
-					<p class="kicker">Installations, 2023 – now</p>
-					<h2>Tennis with markers</h2>
-					<p class="meta">Motion game · Marker tracking</p>
-					<p>A tennis game played with a real swing. ArUco markers, a gyroscope and a depth camera track the player, and Unity turns the movement into the shot.</p>
-					<p class="tools">Unity, ArUco markers, gyroscope, depth camera</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-tennis" data-scene="tennis" data-chapter="03 · Beyond the Screen" data-year="2024" data-category="installations games" data-order="9" data-video="media/hq/bowling.mp4" data-poster="media/hq/bowling.jpg" data-full="images/537935373-VID-20231011-WA0010.mp4" data-ar="480/560">
+				<div class="panel panel-exhibit is-tall">
+					<figure class="exhibit-media" style="--ar: 480/560">
+						<img class="exhibit-back" src="media/hq/bowling.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/bowling.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Tennis with Markers video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">Interactive installation · 2024</p>
+						<h2>Tennis with Markers</h2>
+						<p class="exhibit-desc">A tennis game played with a real swing. ArUco markers, a gyroscope and a depth camera track the player, and Unity turns the movement into the shot.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>Motion game</dd></div>
+							<div><dt>Built with</dt><dd>Unity, ArUco markers, gyroscope, depth camera</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-ultra" data-chapter="2023 · Qubit Events" data-year="2024" data-scene="galaxy" data-video="media/hq/ultra-instinct.mp4" data-poster="media/hq/ultra-instinct.jpg" data-full="images/UltraInstinct.mp4" data-ar="1280/686">
-				<div class="panel">
-					<p class="kicker">R&amp;D, AR particle control</p>
-					<h2>Ultra Instinct</h2>
-					<p class="meta">AR particle control</p>
-					<p>I modified a Python cursor-control library so hand movement drives the particles. The look is inspired by Goku's Ultra Instinct in Dragon Ball Super.</p>
-					<p class="tools">Python, Unity VFX</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-ultra" data-scene="galaxy" data-chapter="03 · Beyond the Screen" data-year="2024" data-category="rnd xr" data-order="10" data-video="media/hq/ultra-instinct.mp4" data-poster="media/hq/ultra-instinct.jpg" data-full="images/UltraInstinct.mp4" data-ar="1280/686">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 1280/686">
+						<img class="exhibit-back" src="media/hq/ultra-instinct.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/ultra-instinct.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Ultra Instinct video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">R&amp;D · 2024</p>
+						<h2>Ultra Instinct</h2>
+						<p class="exhibit-desc">I modified a Python cursor-control library so hand movement drives the particles. The look is inspired by Goku&#x27;s Ultra Instinct in Dragon Ball Super.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>AR particle control</dd></div>
+							<div><dt>Built with</dt><dd>Python, Unity VFX</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop stop-gate" id="y2025" data-scene="gate" data-chapter="2025 · Option1" data-year="2025" data-gate-year="2025" data-gate-label="Option1 Design Studio">
+
+			<section class="stop stop-gate" id="y2025" data-scene="gate" data-chapter="04 · Blurring Realities" data-year="2025" data-gate-year="2025" data-gate-label="Blurring Realities" data-tick="2025">
 				<div class="panel">
-					<p class="kicker">Dubai, UAE</p>
-					<p class="gate-year">2025</p>
-					<h2>Option1 Design Studio</h2>
-					<p class="meta">XR Developer, Jul 2025 – now</p>
+					<p class="eyebrow">Chapter 04 · 2025</p>
+					<p class="gate-year" aria-hidden="true">2025</p>
+					<h2>Blurring Realities</h2>
+					<p class="gate-lede">XR on Meta Quest and Xreal, where the digital world and the physical room start to overlap.</p>
+					<p class="gate-role"><strong>XR Developer, Option1 Design Studio</strong><span>Dubai, UAE · Jul 2025 – now</span></p>
 					<ul class="gate-notes">
-						<li>VR, MR and AR for international brands on Meta Quest and Xreal.</li>
+						<li>VR, MR and AR experiences for international brands.</li>
 						<li>Sensor-driven interaction with Leap Motion and Hokuyo LiDAR.</li>
-						<li>Dubai Police 360 VR and the Madinat Jumeirah mixed reality app.</li>
-						<li>Helped set up the studio's XR experience centre.</li>
+						<li>Networking and backends with Meta XR SDK, Photon PUN and PlayFab.</li>
 					</ul>
 				</div>
 			</section>
 
-			<section class="stop" id="p-police" data-chapter="2025 · Option1" data-year="2025" data-scene="city" data-video="media/hq/dubai-police.mp4" data-poster="media/hq/dubai-police.jpg" data-full="media/hq/dubai-police.mp4" data-ar="1280/720">
-				<div class="panel">
-					<p class="kicker">XR, 2025 – now</p>
-					<h2>Dubai Police 360 VR</h2>
-					<p class="meta">Option1 · 360° VR experience</p>
-					<p>A 360° VR ride for Dubai Police through a future Dubai, where your data and identity are protected, ending inside the command centre.</p>
-					<p class="tools">Unity, 360° rendering, VR</p>
-					<button class="watch" type="button">Watch the video</button>
+			<section class="stop stop-project" id="p-jumeirah" data-scene="mr" data-chapter="04 · Blurring Realities" data-year="2026" data-category="xr" data-order="2" data-video="media/hq/jumeirah-mr.mp4" data-poster="media/hq/jumeirah-mr.jpg" data-full="media/hq/jumeirah-mr.mp4" data-ar="1280/720">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 1280/720">
+						<img class="exhibit-back" src="media/hq/jumeirah-mr.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/jumeirah-mr.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Madinat Jumeirah MR video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">XR · 2026</p>
+						<h2>Madinat Jumeirah MR</h2>
+						<p class="exhibit-desc">A mixed reality app for showing venues. You sign in with hand tracking, explore a 3D model of the venue and its photo and video gallery, invite guests, and then step into a full VR walkthrough of the ballroom together.</p>
+						<dl class="facts">
+							<div><dt>Client</dt><dd>Jumeirah Group, with Option1</dd></div>
+							<div><dt>Device</dt><dd>Meta Quest</dd></div>
+							<div><dt>Built with</dt><dd>Unity, Meta XR SDK, hand tracking, multiplayer</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-jumeirah" data-chapter="2025 · Option1" data-year="2026" data-scene="mr" data-video="media/hq/jumeirah-mr.mp4" data-poster="media/hq/jumeirah-mr.jpg" data-full="media/hq/jumeirah-mr.mp4" data-ar="1280/720">
-				<div class="panel">
-					<p class="kicker">XR, 2025 – now</p>
-					<h2>Madinat Jumeirah MR</h2>
-					<p class="meta">Option1 · Jumeirah Group · Meta Quest</p>
-					<p>A mixed reality app for showing venues. You sign in with hand tracking, explore a 3D model of the venue and its photo and video gallery, invite guests, and then step into a full VR walkthrough of the ballroom together.</p>
-					<p class="tools">Unity, Meta XR SDK, hand tracking, multiplayer</p>
-					<button class="watch" type="button">Watch the video</button>
+
+			<section class="stop stop-project" id="p-anatomy" data-scene="anatomy" data-chapter="04 · Blurring Realities" data-year="2025" data-category="xr rnd" data-order="11" data-video="media/hq/vr-anatomy.mp4" data-poster="media/hq/vr-anatomy.jpg" data-full="images/Grab.mp4" data-ar="1/1">
+				<div class="panel panel-exhibit is-tall">
+					<figure class="exhibit-media" style="--ar: 1/1">
+						<img class="exhibit-back" src="media/hq/vr-anatomy.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/vr-anatomy.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the VR Object Grab video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">XR · 2025</p>
+						<h2>VR Object Grab</h2>
+						<p class="exhibit-desc">Grab objects and turn them with your controller, using the 3D models from my infinite zoom project.</p>
+						<dl class="facts">
+							<div><dt>Type</dt><dd>VR interaction R&amp;D</dd></div>
+							<div><dt>Built with</dt><dd>Unity, VR</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop" id="p-anatomy" data-chapter="2025 · Option1" data-year="2025" data-scene="anatomy" data-video="media/hq/vr-anatomy.mp4" data-poster="media/hq/vr-anatomy.jpg" data-full="images/Grab.mp4" data-ar="1/1">
+
+			<section class="stop stop-gate" id="y2026" data-scene="gate" data-chapter="05 · Experiences at Scale" data-year="2026" data-gate-year="2026" data-gate-label="Experiences at Scale" data-tick="2026">
 				<div class="panel">
-					<p class="kicker">XR R&amp;D</p>
-					<h2>VR object grab</h2>
-					<p class="meta">Controller interaction</p>
-					<p>Grab objects and turn them with your controller, using the 3D models from my infinite zoom project.</p>
-					<p class="tools">Unity, VR</p>
-					<button class="watch" type="button">Watch the video</button>
+					<p class="eyebrow">Chapter 05 · 2026</p>
+					<p class="gate-year" aria-hidden="true">2026</p>
+					<h2>Experiences at Scale</h2>
+					<p class="gate-lede">Complex interactive experiences that combine engineering, spatial design and real-world deployment.</p>
+					<p class="gate-role"><strong>XR Developer, Option1 Design Studio</strong><span>Dubai, UAE · now</span></p>
+					<ul class="gate-notes">
+						<li>Helped set up the studio&#x27;s XR experience centre: installation, testing and debugging.</li>
+						<li>Maintaining live Unity installations.</li>
+					</ul>
 				</div>
 			</section>
-			<section class="stop stop-about" id="about" data-chapter="Now" data-year="2026" data-scene="about">
-				<div class="panel panel-wide">
-					<p class="kicker">About</p>
-					<h2>Between the screen and the room</h2>
-					<p class="lede-sm">I'm a Unity developer with nearly six years in games and XR. Most of my work now happens between the screen and the room: LED floors and walls that respond to people, camera and LiDAR tracking, and apps for Meta Quest and Xreal.</p>
-					<p>I started out making mobile games, which is where the habits came from: tight performance budgets, data-driven systems, and builds that hold up on site, not just on my desk.</p>
-					<ol class="roles">
-						<li><span>2025 – now</span><span>XR Developer</span><span>Option1 Design Studio</span></li>
-						<li><span>2023 – now</span><span>Interactive Software Developer</span><span>Qubit Events Management</span></li>
-						<li><span>2022 – 2023</span><span>Unity Game Developer</span><span>GameEver Studio</span></li>
-						<li><span>2020 – 2022</span><span>Unity Game Developer</span><span>Spartans Global</span></li>
-					</ol>
-					<p class="tools">Unity, C#, Meta XR SDK, Photon PUN, PlayFab, OpenCV, MediaPipe, YOLO, Hokuyo LiDAR, Leap Motion, Arduino, three.js, p5.js, TouchDesigner, ComfyUI.</p>
+
+			<section class="stop stop-project" id="p-police" data-scene="city" data-chapter="05 · Experiences at Scale" data-year="2025" data-category="xr" data-order="1" data-video="media/hq/dubai-police.mp4" data-poster="media/hq/dubai-police.jpg" data-full="media/hq/dubai-police.mp4" data-ar="1280/720">
+				<div class="panel panel-exhibit">
+					<figure class="exhibit-media" style="--ar: 1280/720">
+						<img class="exhibit-back" src="media/hq/dubai-police.jpg" alt="" loading="lazy" decoding="async" />
+						<img class="exhibit-poster" src="media/hq/dubai-police.jpg" alt="" loading="lazy" decoding="async" />
+						<button class="exhibit-play watch" type="button" aria-label="Watch the Dubai Police 360 VR video"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg><span>Watch project video</span></button>
+					</figure>
+					<div class="exhibit-info">
+						<p class="eyebrow">XR · 2025</p>
+						<h2>Dubai Police 360 VR</h2>
+						<p class="exhibit-desc">A 360° VR ride for Dubai Police through a future Dubai, where your data and identity are protected, ending inside the command centre.</p>
+						<dl class="facts">
+							<div><dt>Client</dt><dd>Dubai Police, with Option1</dd></div>
+							<div><dt>Type</dt><dd>360° VR experience</dd></div>
+							<div><dt>Built with</dt><dd>Unity, 360° rendering, VR</dd></div>
+						</dl>
+						<div class="exhibit-actions">
+							<button class="btn btn-line watch" type="button"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path class="fill" d="M5 3.2v9.6c0 .4.5.7.8.4l7.2-4.8c.3-.2.3-.6 0-.8L5.8 2.8c-.3-.3-.8 0-.8.4z" /></svg>Watch video</button>
+							<button class="btn btn-text case-open" type="button">Project details<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+						</div>
+					</div>
 				</div>
 			</section>
-			<section class="stop stop-contact" id="contact" data-chapter="Now" data-year="2026" data-scene="contact">
-				<div class="panel">
-					<p class="kicker">Contact</p>
-					<h2>Let's build something people walk into</h2>
-					<p>Open to installations, XR apps and Unity work.</p>
+
+			<section class="stop stop-about" id="about" data-chapter="About" data-year="2026" data-scene="about">
+				<div class="panel panel-wide panel-about">
+					<div class="about-main">
+						<p class="eyebrow">About</p>
+						<h2>Same curiosity, bigger worlds</h2>
+						<p class="lede-sm">I'm Burhan, a Unity and XR developer in Dubai with nearly six years in games, installations and XR.</p>
+						<p>I started Computer Science in Islamabad in 2017, and I was building mobile games in Unity at Spartans Global before I graduated. Games taught me the habits I still rely on: tight performance budgets, data-driven systems and code that other people can build on. At GameEver Studio in Dubai I moved on to FPS and 2D games, from enemy AI to shaders.</p>
+						<p>In 2023 my work left the screen. At Qubit Events Management I build installations for brands and festivals: LED floors and walls that react to people, MediaPipe and YOLO tracking, and Arduino-driven motion. Since 2025 I've been an XR developer at Option1 Design Studio, making VR, MR and AR experiences on Meta Quest and Xreal.</p>
+						<p>The problems I enjoy most sit between the prototype and the real room: sensors that behave on site, builds that hold up in front of visitors, and experiences people understand the moment they step in.</p>
+					</div>
+					<div class="about-side">
+						<h3>Experience</h3>
+						<ol class="roles">
+							<li><span>2025 – now</span><span>XR Developer</span><span>Option1 Design Studio</span></li>
+							<li><span>2023 – now</span><span>Interactive Software Developer</span><span>Qubit Events Management</span></li>
+							<li><span>2022 – 2023</span><span>Unity Game Developer</span><span>GameEver Studio</span></li>
+							<li><span>2020 – 2022</span><span>Unity Game Developer</span><span>Spartans Global</span></li>
+						</ol>
+						<h3>Tools</h3>
+						<p class="tools">Unity, C#, Meta XR SDK, Photon PUN, PlayFab, OpenCV, MediaPipe, YOLO, Hokuyo LiDAR, Leap Motion, Arduino, three.js, p5.js, TouchDesigner, ComfyUI.</p>
+					</div>
+				</div>
+			</section>
+			<section class="stop stop-contact" id="contact" data-chapter="Contact" data-year="2026" data-scene="contact">
+				<div class="panel panel-contact">
+					<p class="eyebrow">Contact</p>
+					<h2>Let's build something people can step into.</h2>
+					<p class="contact-text">Open to installations, XR apps and Unity work.</p>
 					<a class="mail" href="mailto:muhdburh@gmail.com">muhdburh@gmail.com</a>
 					<ul class="links">
 						<li><a href="https://linkedin.com/in/burhan066/" target="_blank" rel="noopener">LinkedIn</a></li>
@@ -310,10 +539,46 @@
 						<li><a href="Burhan_Ahmad_CV.pdf" target="_blank" rel="noopener">CV</a></li>
 						<li><a href="old.html">Previous site</a></li>
 					</ul>
-					<a class="again only-3d" href="#top">Walk it again</a>
+					<div class="contact-actions">
+						<a class="btn btn-ghost again only-3d" href="#top">Walk it again</a>
+						<a class="btn btn-text js-work" href="#work">View selected work<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></a>
+					</div>
 				</div>
 			</section>
 		</main>
+
+		<dialog class="gallery" id="work" aria-labelledby="gallery-title">
+			<div class="gallery-inner">
+				<header class="gallery-head">
+					<div>
+						<p class="eyebrow">Selected work</p>
+						<h2 id="gallery-title">Projects</h2>
+					</div>
+					<div class="filters" role="group" aria-label="Filter projects"></div>
+					<button class="dlg-close" type="button" aria-label="Close selected work"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg></button>
+				</header>
+				<ul class="gallery-grid"></ul>
+			</div>
+		</dialog>
+
+		<dialog class="case" aria-labelledby="case-title">
+			<div class="case-inner">
+				<button class="dlg-close" type="button" aria-label="Close project details"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg></button>
+				<div class="case-media"><video controls playsinline preload="none"></video></div>
+				<div class="case-body">
+					<p class="eyebrow case-kicker"></p>
+					<h2 id="case-title"></h2>
+					<p class="case-desc"></p>
+					<dl class="facts case-facts"></dl>
+					<div class="case-more-slot"></div>
+					<div class="case-nav">
+						<button class="btn btn-text case-prev" type="button"><svg class="ico flip" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg><span></span></button>
+						<a class="btn btn-ghost case-goto only-3d" href="#">See it in the journey</a>
+						<button class="btn btn-text case-next" type="button"><span></span><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.2M8.6 4.2 12.4 8l-3.8 3.8" /></svg></button>
+					</div>
+				</div>
+			</div>
+		</dialog>
 
 		<dialog class="player" aria-label="Video">
 			<video controls playsinline></video>
