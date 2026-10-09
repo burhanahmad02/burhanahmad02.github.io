@@ -481,9 +481,13 @@
 	var HEIGHT = 1.82;
 	var person = new THREE.Group();
 	scene.add(person);
-	var avatar = null, mixer = null, walkA = null, idleA = null, walkDur = 1, STRIDE = 1.83 * (HEIGHT / 1.68);
+	var avatar = null, mixer = null, walkA = null, talkA = null, calmA = null, nodA = null, walkDur = 1, STRIDE = 1.83 * (HEIGHT / 1.68);
 	var bones = {}, glasses = new THREE.Group();
-	var pose = { move: 0, glasses: 0, yaw: 0, walkT: 0, lastHalf: 0 };
+	var pose = { move: 0, glasses: 0, yaw: 0, walkT: 0, lastHalf: 0, turn: 0 };
+	// what he does while standing: a calm breathing idle, a nod when he arrives,
+	// now and then a few words with his hands, and his eyes on you or the project
+	var act = { still: 0, nod: 0, nodOn: false, talk: 0, talkOn: false, talkEnd: 0, nextTalk: 3.5, at: null,
+		lookQ: new THREE.Quaternion(), lookW: 0, focus: 0, focusEnd: 0, glance: new THREE.Vector3() };
 
 	function radialTex(inner, outer) {
 		var c = document.createElement('canvas'); c.width = c.height = 128;
@@ -507,11 +511,70 @@
 	scene.add(avKey); scene.add(avKey.target);
 	[hemi, key, fill, rimLight, faceLight, avKey].forEach(function (l) { l.layers.enable(1); });
 
+	// Three sunglasses for the try-on stop, in metres around the lens centres:
+	// gold aviators, black classics and round tortoiseshell frames.
+	var GLASSES = [
+		{ name: 'Aviator', shape: 'drop', w: 0.056, h: 0.046, rim: 0.0022, depth: 0.0022, frame: 0xd4ae6a, metal: true, lens: 0x1d2a24, tint: 0.9, bridge: 'double' },
+		{ name: 'Classic', shape: 'square', w: 0.053, h: 0.040, rim: 0.0066, depth: 0.0062, frame: 0x0c0c0e, metal: false, lens: 0x101215, tint: 0.93, bridge: 'solid' },
+		{ name: 'Round', shape: 'round', w: 0.047, h: 0.045, rim: 0.0032, depth: 0.0034, frame: 0x6e3f1d, metal: false, lens: 0x7a4a1a, tint: 0.62, bridge: 'arch' }
+	];
+	var glassPick = { sel: 0, prev: -1, k: 1 };
+	// one lens outline, centred on the lens, its outer edge towards +x
+	function lensPath(g, grow) {
+		var sh = new THREE.Shape(), n = 48, w = g.w / 2 + grow, h = g.h / 2 + grow;
+		for (var i = 0; i < n; i++) {
+			var a = i / n * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), x, y;
+			if (g.shape === 'square') {
+				var px = Math.sign(c) * Math.pow(Math.abs(c), 0.42), py = Math.sign(sn) * Math.pow(Math.abs(sn), 0.42);
+				x = px * w * (1 + 0.05 * py); y = py * h;
+			} else if (g.shape === 'drop') {
+				x = c * w; y = sn * h;
+				if (sn < 0) { y *= 1 + 0.26 * Math.max(0, c); x -= 0.1 * w * sn * Math.max(0, c); } else y *= 0.9;
+			} else { x = c * w; y = sn * h; }
+			if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y);
+		}
+		sh.closePath();
+		return sh;
+	}
+	function makeGlasses(g) {
+		var grp = new THREE.Group(), dx = 0.034;
+		var fm = g.metal ? std(g.frame, { metalness: 1, roughness: 0.2, envMapIntensity: 1.3 }) : std(g.frame, { metalness: 0.05, roughness: 0.16, envMapIntensity: 0.9 });
+		var lm = new THREE.MeshStandardMaterial({ color: g.lens, metalness: 0.75, roughness: 0.05, transparent: true, opacity: g.tint, envMapIntensity: 1.6 });
+		[-1, 1].forEach(function (sd) {
+			var side = new THREE.Group(); side.position.x = sd * dx; side.scale.x = sd; grp.add(side);
+			var ring = lensPath(g, g.rim); ring.holes.push(lensPath(g, 0));
+			var rg = new THREE.ExtrudeBufferGeometry(ring, { depth: g.depth, bevelEnabled: true, bevelThickness: g.depth * 0.3, bevelSize: Math.min(g.rim * 0.3, 0.0011), bevelSegments: 2, curveSegments: 4 });
+			rg.translate(0, 0, -g.depth / 2);
+			side.add(new THREE.Mesh(rg, fm));
+			var lens = new THREE.Mesh(new THREE.ShapeBufferGeometry(lensPath(g, g.rim * 0.4)), lm);
+			lens.position.z = -0.0006; side.add(lens);
+			// the arm, from the hinge back over the ear, flaring out round his head
+			var x0 = g.w / 2 + g.rim * 0.5, len = 0.15, flare = 0.024, L = Math.sqrt(len * len + flare * flare);
+			var arm = new THREE.Mesh(rbox(g.metal ? 0.0024 : 0.0048, g.metal ? 0.0024 : 0.0075, L, g.metal ? 0.0011 : 0.002), fm);
+			arm.position.set(x0 + flare / 2, g.h * 0.22, -len / 2 - g.depth / 2); arm.rotation.y = -Math.asin(flare / L);
+			side.add(arm);
+			if (!g.metal) { var hinge = new THREE.Mesh(rbox(0.006, 0.01, 0.008, 0.002), fm); hinge.position.set(x0 + 0.001, g.h * 0.22, -0.003); side.add(hinge); }
+		});
+		var gap = 2 * dx - g.w;
+		if (g.bridge === 'double') {
+			[[g.h * 0.36, 0.0018], [g.h * 0.12, 0.0016]].forEach(function (b) {
+				var bar = new THREE.Mesh(new THREE.CylinderBufferGeometry(b[1], b[1], gap + 0.004, 8), fm);
+				bar.rotation.z = Math.PI / 2; bar.position.y = b[0]; grp.add(bar);
+			});
+		} else if (g.bridge === 'solid') {
+			var br = new THREE.Mesh(rbox(gap + 0.01, 0.008, g.depth, 0.0025), fm); br.position.y = g.h * 0.16; grp.add(br);
+		} else {
+			var arc = new THREE.Mesh(new THREE.TorusBufferGeometry(gap / 2 + 0.002, g.rim * 0.45, 6, 16, Math.PI), fm);
+			arc.position.y = g.h * 0.02; grp.add(arc);
+		}
+		return grp;
+	}
+
 	(function loadAvatar() {
 		if (!THREE.GLTFLoader) return;
 		var L = new THREE.GLTFLoader(), got = {};
 		function done() {
-			if (!got.body || !got.walk || !got.idle) return;
+			if (!got.body || !got.walk || !got.idle || !got.moves) return;
 			avatar = got.body.scene;
 			avatar.scale.setScalar(HEIGHT / 1.68);
 			avatar.traverse(function (o) {
@@ -533,26 +596,30 @@
 					for (var i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
 				}
 			});
-			var idleClip = got.idle.animations[0];
+			var talkClip = got.idle.animations[0];
 			mixer = new THREE.AnimationMixer(avatar);
 			walkA = mixer.clipAction(clip); walkA.play(); walkA.timeScale = 0;
-			idleA = mixer.clipAction(idleClip); idleA.play();
+			talkA = mixer.clipAction(talkClip); talkA.play();
 			walkDur = clip.duration;
-			// sunglasses for the try-on stop, on the head bone
+			// a calm standing idle and a nod, retargeted to his rig (media/avatar/moves.json)
+			(got.moves.clips || []).forEach(function (c) {
+				var clip = THREE.AnimationClip.parse(c);
+				clip.uuid = THREE.MathUtils.generateUUID(); // parse() copies a missing uuid, and the mixer keys actions by it
+				var a = mixer.clipAction(clip);
+				if (c.name === 'calm') { calmA = a; a.play(); }
+				if (c.name === 'nod') { nodA = a; a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+			});
+			if (!calmA) { calmA = talkA; talkA = null; }
+			// sunglasses for the try-on stop: three frames that swap on his face. The
+			// frame sits where his eyes are on this mesh, measured in the bind pose:
+			// about 10 cm above the head joint and 15.6 cm in front of it.
 			var head = bones['mixamorigHead'] || bones['mixamorig:Head'];
 			if (head) {
-				var lensM = new THREE.MeshStandardMaterial({ color: 0x050607, roughness: 0.08, metalness: 0.9 });
-				var frameM = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.3 });
-				[-1, 1].forEach(function (sd) {
-					var lens = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.026, 0.026, 0.006, 24), lensM);
-					lens.rotation.x = Math.PI / 2; lens.scale.set(1.25, 1, 1); lens.position.set(sd * 0.034, 0, 0); glasses.add(lens);
-				});
-				var bridge = new THREE.Mesh(new THREE.BoxBufferGeometry(0.02, 0.005, 0.005), frameM); glasses.add(bridge);
-				var bar = new THREE.Mesh(new THREE.BoxBufferGeometry(0.15, 0.006, 0.006), frameM); bar.position.y = 0.022; glasses.add(bar);
-				glasses.traverse(function (o) { o.layers.enable(1); });
 				var hs = 1 / (avatar.scale.x * worldScaleOf(head));
 				glasses.scale.setScalar(hs);
-				glasses.position.set(0, 0.075 * hs, 0.085 * hs);
+				glasses.position.set(0, 0.0951, 0.1440);
+				GLASSES.forEach(function (g) { var m = makeGlasses(g); m.visible = false; glasses.add(m); });
+				glasses.traverse(function (o) { o.layers.enable(1); });
 				glasses.visible = false;
 				head.add(glasses);
 			}
@@ -562,6 +629,8 @@
 		L.load('media/avatar/burhan-avatar.glb', function (g) { got.body = g; done(); }, undefined, fail);
 		L.load('media/avatar/walk.glb', function (g) { got.walk = g; done(); }, undefined, fail);
 		L.load('media/avatar/idle.glb', function (g) { got.idle = g; done(); }, undefined, fail);
+		var F = new THREE.FileLoader(); F.setResponseType('json');
+		F.load('media/avatar/moves.json', function (j) { got.moves = j; done(); }, undefined, function () { got.moves = { clips: [] }; done(); });
 	})();
 
 	var _hand = new THREE.Vector3();
@@ -570,6 +639,84 @@
 		if (b) return b.getWorldPosition(out);
 		return out.set(person.position.x + 0.3, 1.0, person.position.z);
 	}
+	// Standing still he breathes, nods when he arrives and, now and then, says a few
+	// words with his hands; the weights are blended in the frame loop.
+	function updateActs(dt, near) {
+		var standing = pose.move < 0.06 && pose.turn < 0.5;
+		act.still = standing ? act.still + dt : 0;
+		var here = near && near.life > 0.6 ? near : null;
+		if (!standing) { act.at = null; act.nodOn = false; act.talkOn = false; act.nextTalk = 3 + Math.random() * 2; act.focus = 0; act.focusEnd = 0.8; }
+		if (here && act.at !== here && act.still > 0.3) {
+			act.at = here;
+			if (nodA) { nodA.reset(); nodA.play(); act.nodOn = true; }
+			// a first look at the project, then back to you
+			act.focus = 1; act.focusEnd = act.still + 1.4;
+		}
+		if (act.nodOn && (!nodA || nodA.time > nodA.getClip().duration - 0.35)) act.nodOn = false;
+		if (talkA && here && !here.quiet && !act.talkOn && !act.nodOn && act.still > act.nextTalk) {
+			talkA.time = 0; act.talkOn = true; act.talkEnd = act.still + talkA.getClip().duration - 0.3;
+		}
+		if (act.talkOn && act.still > act.talkEnd) { act.talkOn = false; act.nextTalk = act.still + 4 + Math.random() * 5; }
+		act.nod = damp(act.nod, act.nodOn ? 1 : 0, act.nodOn ? 6 : 3, dt);
+		act.talk = damp(act.talk, act.talkOn ? 0.9 : 0, 2.6, dt);
+	}
+
+	// Head and neck turn to what he is looking at, on top of whatever the clips are
+	// doing: mostly you, a glance at the project, sometimes a look away.
+	var _lk = new THREE.Vector3(), _hp = new THREE.Vector3(), _lq = new THREE.Quaternion(), _wq = new THREE.Quaternion(), _pq = new THREE.Quaternion(), _iq = new THREE.Quaternion(), _pi = new THREE.Quaternion();
+	var _z = new THREE.Vector3(0, 0, 1), _ld = new THREE.Vector3();
+	var LOOK = [['mixamorigSpine2', 0.18], ['mixamorigNeck', 0.34], ['mixamorigHead', 0.48]];
+	function lookAround(dt, near) {
+		var head = bones.mixamorigHead;
+		if (!head) return;
+		if (act.still > act.focusEnd) {
+			if (act.focus === 0) {
+				var r = Math.random(), toProject = near && (near.lookAt || near.screen);
+				act.focus = toProject && r < (near.quiet ? 0.6 : 0.4) ? 1 : 2;
+				act.focusEnd = act.still + 1 + Math.random() * 1.2;
+				act.glance.set((Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.4), -0.12 - Math.random() * 0.18, 1);
+			} else { act.focus = 0; act.focusEnd = act.still + 3 + Math.random() * 3.5; }
+		}
+		head.getWorldPosition(_hp);
+		if (act.focus === 1 && near && near.lookAt) near.lookAt(_lk);
+		else if (act.focus === 1 && near && near.screen && near.screen.visible) near.screen.getWorldPosition(_lk);
+		else if (act.focus === 2) _lk.copy(act.glance).applyQuaternion(person.quaternion).add(_hp);
+		else _lk.copy(camera.position);
+		// into his own frame, limited to what a neck can do
+		_pi.copy(person.quaternion).invert();
+		_ld.copy(_lk).sub(_hp).applyQuaternion(_pi).normalize();
+		var yaw = Math.atan2(_ld.x, _ld.z), pitch = Math.asin(Math.max(-1, Math.min(1, _ld.y)));
+		// nobody looks straight back over their shoulder: walking away from you, he looks ahead
+		if (Math.abs(yaw) > 2.6) yaw = pitch = 0;
+		yaw = Math.max(-1.05, Math.min(1.05, yaw)); pitch = Math.max(-0.35, Math.min(0.3, pitch));
+		_ld.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+		_lq.setFromUnitVectors(_z, _ld);
+		act.lookW = damp(act.lookW, 1 - 0.75 * smooth(0.1, 0.6, pose.move), 3, dt);
+		_iq.identity().slerp(_lq, act.lookW);
+		act.lookQ.slerp(_iq, 1 - Math.exp(-4.2 * dt));
+		// share the turn down the spine, neck and head, applied in world space
+		_wq.copy(person.quaternion).multiply(act.lookQ).multiply(_pi);
+		LOOK.forEach(function (l) {
+			var b = bones[l[0]];
+			if (!b) return;
+			_iq.identity().slerp(_wq, l[1]);
+			b.parent.getWorldQuaternion(_pq);
+			_lq.copy(_pq).invert().multiply(_iq).multiply(_pq);
+			b.quaternion.premultiply(_lq);
+		});
+	}
+
+	// keep his soles on the floor whatever mix of clips is playing
+	var FEET = [['mixamorigLeftFoot', 0.116], ['mixamorigRightFoot', 0.116], ['mixamorigLeftToeBase', 0.023], ['mixamorigRightToeBase', 0.023]];
+	function groundFeet(dt) {
+		var lo = Infinity;
+		FEET.forEach(function (f) { var b = bones[f[0]]; if (b) lo = Math.min(lo, b.getWorldPosition(_lk).y - f[1]); });
+		if (lo === Infinity) return;
+		var want = avatar.position.y - lo;
+		avatar.position.y = act.grounded ? damp(avatar.position.y, want, 14, dt) : want;
+		act.grounded = true;
+	}
+
 	function roundRect(g, x, y, w, h, r) {
 		g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
 		g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
@@ -1149,30 +1296,61 @@
 		var mirror = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.95, 1.65), new THREE.MeshBasicMaterial({ map: mirrorTex, transparent: true, fog: false }));
 		mirror.scale.x = -1;
 		mirror.position.set(0, 1.35, 0.055); kiosk.add(mirror);
-		var ui = textTex(256, 444);
-		(function () {
-			var g = ui.g; g.strokeStyle = '#3fe0e0'; g.lineWidth = 6; g.strokeRect(10, 10, 236, 424);
-			g.fillStyle = 'rgba(63,224,224,0.9)'; g.fillRect(10, 10, 236, 8);
-			g.font = '600 18px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-			['Choose glasses', 'Take a photo'].forEach(function (l, i) {
-				var x = 18 + i * 116; g.fillStyle = 'rgba(10,30,32,0.85)'; g.fillRect(x, 384, 104, 36);
-				g.fillStyle = '#e8ffff'; g.fillText(l, x + 52, 402);
+		// the kiosk's own screen: the frames to choose from and the photo button
+		var ui = textTex(512, 888);
+		function drawUI(sel) {
+			var g = ui.g;
+			g.clearRect(0, 0, 512, 888);
+			g.save(); g.scale(2, 2);
+			g.strokeStyle = 'rgba(63,224,224,0.9)'; g.lineWidth = 4; roundRect(g, 8, 8, 240, 428, 10); g.stroke();
+			var top = g.createLinearGradient(0, 8, 0, 60); top.addColorStop(0, 'rgba(4,22,24,0.85)'); top.addColorStop(1, 'rgba(4,22,24,0)');
+			g.fillStyle = top; g.fillRect(10, 10, 236, 50);
+			g.font = '700 13px Archivo, Arial, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
+			g.fillStyle = '#bff7f7'; g.fillText('AR TRY-ON', 22, 30);
+			g.beginPath(); g.arc(228, 30, 4, 0, Math.PI * 2); g.fillStyle = '#ff5a5a'; g.fill();
+			var bot = g.createLinearGradient(0, 300, 0, 436); bot.addColorStop(0, 'rgba(4,22,24,0)'); bot.addColorStop(0.35, 'rgba(4,22,24,0.88)');
+			g.fillStyle = bot; g.fillRect(10, 300, 236, 134);
+			g.textAlign = 'center'; g.font = '600 13px Archivo, Arial, sans-serif';
+			GLASSES.forEach(function (gl, i) {
+				var x = 16 + i * 77, y = 346, on = i === sel;
+				roundRect(g, x, y, 70, 30, 15);
+				g.fillStyle = on ? '#3fe0e0' : 'rgba(255,255,255,0.08)'; g.fill();
+				g.strokeStyle = on ? '#3fe0e0' : 'rgba(191,247,247,0.45)'; g.lineWidth = 1.5; g.stroke();
+				g.fillStyle = on ? '#062022' : '#e8ffff'; g.fillText(gl.name, x + 35, y + 16);
 			});
-		})();
-		ui.t.needsUpdate = true;
+			roundRect(g, 52, 390, 152, 34, 17); g.fillStyle = '#f2fbfb'; g.fill();
+			g.fillStyle = '#062022'; g.font = '700 14px Archivo, Arial, sans-serif'; g.fillText('Take a photo', 128, 408);
+			g.restore();
+			ui.t.needsUpdate = true;
+		}
+		drawUI(0);
+		ui.t.anisotropy = 4;
 		var uiMesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.95, 1.65), new THREE.MeshBasicMaterial({ map: ui.t, transparent: true, fog: false }));
 		uiMesh.position.set(0, 1.35, 0.058); kiosk.add(uiMesh);
-		st.update = function (t, life) {
+		// he looks at himself in the kiosk now and then, and keeps the talking for other stops
+		st.quiet = true;
+		st.lookAt = function (v) { return mirror.getWorldPosition(v); };
+		var sel = 0, held = 0;
+		st.update = function (t, life, dt) {
 			var on = smooth(0.25, 0.8, life);
 			kiosk.position.y = -(1 - easeOut(smooth(0, 0.5, life))) * 2.4;
 			kiosk.position.x = mobile ? -1.3 : -2.3; kiosk.position.z = mobile ? -4.4 : -3.4;
 			kiosk.rotation.y = mobile ? 0.2 : 0.38;
 			kiosk.visible = life > 0.01;
-			pose.glasses = Math.max(pose.glasses, smooth(0.55, 0.95, life));
+			var wear = smooth(0.55, 0.95, life);
+			pose.glasses = Math.max(pose.glasses, wear);
+			// once they're on, the next pair every few seconds
+			if (wear > 0.99) {
+				held += dt;
+				if (held > 2.6) { held = 0; glassPick.prev = sel; sel = (sel + 1) % GLASSES.length; glassPick.sel = sel; glassPick.k = 0; drawUI(sel); }
+			} else if (life < 0.3 && sel !== 0) { held = 0; sel = 0; glassPick.sel = 0; glassPick.prev = -1; glassPick.k = 1; drawUI(0); }
+			glassPick.k = Math.min(1, glassPick.k + dt / 0.5);
 			bgm.material.color.setRGB(0.02 + 0.03 * on, 0.06 + 0.17 * on, 0.07 + 0.18 * on);
 			mirror.material.opacity = on;
 			uiMesh.material.opacity = on;
 			if (on > 0.01) mirrorWanted = true;
+			// he turns a little towards the kiosk
+			st.stance = (mobile ? -0.08 : -0.16) * on;
 		};
 	};
 
@@ -2899,19 +3077,31 @@
 		var px0 = pathX(charS);
 		var near = nearest();
 
-		// walk cycle driven by distance so his feet stay planted, up to a brisk pace
-		pose.walkT += Math.min(Math.abs(ds), 4.2 * dt) / STRIDE * walkDur;
-		if (pose.move < 0.05) {
+		// walk cycle driven by distance so his feet stay planted, up to a brisk pace;
+		// turning round on the spot he steps instead of spinning on his heels
+		var stepTurn = smooth(0.8, 2.6, pose.turn) * 0.75;
+		pose.walkT += Math.min(Math.abs(ds), 4.2 * dt) / STRIDE * walkDur + stepTurn * dt * 0.9 * walkDur;
+		var stepping = Math.max(pose.move, stepTurn);
+		if (stepping < 0.05) {
 			// settle into the nearest planted stance
 			var half = walkDur / 2, tgt = Math.round(pose.walkT / half) * half;
 			pose.walkT = damp(pose.walkT, tgt, 4, dt);
 		}
 		if (mixer) {
 			walkA.time = pose.walkT % walkDur;
-			var w = smooth(0.0, 0.6, pose.move);
+			var w = smooth(0.0, 0.6, stepping);
+			updateActs(dt, near);
+			// standing: the calm idle, with the nod and the talking clip blended over it
+			var rest = 1 - w, wn = nodA ? rest * act.nod : 0, wt = talkA ? rest * (1 - act.nod) * act.talk : 0;
 			walkA.setEffectiveWeight(w);
-			idleA.setEffectiveWeight(1 - w);
+			if (nodA) nodA.setEffectiveWeight(wn);
+			if (talkA) talkA.setEffectiveWeight(wt);
+			calmA.setEffectiveWeight(rest - wn - wt);
+			// the mixer only writes a bone when its value changes, so put back the pose it
+			// last wrote before the head turn was layered on, or the turn would pile up
+			LOOK.forEach(function (l) { var b = bones[l[0]]; if (b && b.userData.base) b.quaternion.copy(b.userData.base); });
 			mixer.update(dt);
+			LOOK.forEach(function (l) { var b = bones[l[0]]; if (b) (b.userData.base || (b.userData.base = new THREE.Quaternion())).copy(b.quaternion); });
 		}
 		// footsteps on the LED floor, on each heel strike
 		var halfIdx = Math.floor(pose.walkT / (walkDur / 2));
@@ -3011,10 +3201,18 @@
 		var back = ds < -0.0008, fwd = ds > 0.0008;
 		if (back) pose.facing = Math.PI; else if (fwd) pose.facing = 0;
 		var want = (pose.facing || 0) + (pose.facing ? -heading : heading);
-		if (pose.move < 0.1) want = 0.18 * Math.sin(t * 0.3) + (camera.position.x - px0) * 0.05;
+		// standing, he squares up to you and stays put; his head does the looking
+		if (pose.move < 0.1) want = (camera.position.x - px0) * 0.05 + (near && near.stance || 0);
 		var dy = ((want - pose.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-		pose.yaw += dy * (1 - Math.exp(-5 * dt));
+		var dYaw = dy * (1 - Math.exp(-(pose.move < 0.1 ? 3.4 : 5) * dt));
+		pose.yaw += dYaw;
+		pose.turn = damp(pose.turn, Math.abs(dYaw) / Math.max(dt, 1e-3), 8, dt);
 		person.rotation.y = pose.yaw;
+		if (avatar) {
+			person.updateMatrixWorld(true);
+			groundFeet(dt);
+			lookAround(dt, near);
+		}
 		shadow.position.set(px0, 0.006, charS + 0.05);
 		rimLight.color.copy(led);
 		rimLight.intensity = 2.2 + 3.0 * (near ? near.life : 0);
@@ -3024,8 +3222,15 @@
 		avKey.position.set(px0 + 2.4, 3.6, charS + 5.0);
 		avKey.target.position.set(px0, 1.05, charS);
 		sky.position.set(px0, 30, charS - 62);
+		// the frames he is trying on: the new pair drops onto his face as the last one lifts away
 		glasses.visible = pose.glasses > 0.02;
-		if (glasses.visible) glasses.scale.setScalar(glasses.userData.s || (glasses.userData.s = glasses.scale.x)).multiplyScalar(Math.max(0.001, easeOut(pose.glasses)));
+		if (glasses.visible) glasses.children.forEach(function (g, i) {
+			var on = easeOut(pose.glasses), kin = easeOut(glassPick.k), kout = smooth(0, 0.55, glassPick.k);
+			var k = i === glassPick.sel ? kin * on : i === glassPick.prev ? 1 - kout : 0;
+			g.visible = k > 0.002;
+			g.scale.setScalar(Math.max(0.001, k));
+			g.position.y = i === glassPick.sel ? (1 - kin) * 0.045 + (1 - on) * 0.05 : kout * 0.035;
+		});
 		if (mirrorWanted && avatar) {
 			mirrorWanted = false;
 			mirrorCam.position.set(px0 + Math.sin(pose.yaw) * 2.6, 1.45, charS + Math.cos(pose.yaw) * 2.6);
