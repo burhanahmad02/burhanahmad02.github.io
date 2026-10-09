@@ -8,7 +8,7 @@
 :root {
 	--bg: #08080a;
 	--fg: #f3f1ec;
-	--muted: #a19f99;
+	--muted: #b3b0a9;
 	--line: rgba(243, 241, 236, 0.16);
 	--accent: #f3f1ec;
 	--font: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
@@ -308,6 +308,22 @@ h2 {
 .is-3d .panel > * { align-self: flex-start; }
 /* a soft shadow keeps the copy readable over bright scenes */
 .is-3d .panel h1, .is-3d .panel h2, .is-3d .panel p, .is-3d .panel li { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 22px rgba(0, 0, 0, 0.6); }
+/* and on wide screens a soft shade on the left, so the copy never sits on a bright floor or screen */
+@media (min-width: 1000px) {
+	.is-3d .panel::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		width: min(50rem, 62vw);
+		background: linear-gradient(90deg, rgba(8, 8, 10, 0.58) 0%, rgba(8, 8, 10, 0.38) 42%, rgba(8, 8, 10, 0) 100%);
+		-webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+		mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+		pointer-events: none;
+		z-index: -1;
+	}
+}
 .is-3d .panel-wide { max-width: calc(30rem + 2 * var(--gutter)); }
 .is-3d .stop-intro .panel { max-width: calc(34rem + 2 * var(--gutter)); }
 .is-3d .panel.is-off { visibility: hidden; }
@@ -325,11 +341,12 @@ h2 {
 		left: 0;
 		right: 0;
 		bottom: 0;
-		height: 58%;
-		background: linear-gradient(0deg, rgba(8, 8, 10, 0.94) 35%, rgba(8, 8, 10, 0));
+		height: 70%;
+		background: linear-gradient(0deg, rgba(8, 8, 10, 0.95) 0%, rgba(8, 8, 10, 0.86) 52%, rgba(8, 8, 10, 0.5) 76%, rgba(8, 8, 10, 0));
 		pointer-events: none;
 	}
-	.is-3d .stop-intro .panel::before { height: 70%; }
+	.is-3d .stop-intro .panel::before { height: 62%; }
+	.is-3d .kicker { color: #d2cfc8; }
 	.is-3d .stop-about .panel::before { height: 100%; background: rgba(8, 8, 10, 0.82); }
 	.vignette { background: linear-gradient(0deg, rgba(8, 8, 10, 0.4) 0%, rgba(8, 8, 10, 0) 30%); }
 	h1 { font-size: 3.2rem; }
