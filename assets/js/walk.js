@@ -99,7 +99,8 @@
 	try {
 		renderer = new THREE.WebGLRenderer({ antialias: !fancy && !coarse, powerPreference: 'high-performance' });
 	} catch (e) { lite(); return; }
-	renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 1.6));
+	var baseDpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : 1.5);
+	renderer.setPixelRatio(baseDpr);
 	renderer.outputEncoding = THREE.sRGBEncoding;
 	host.appendChild(renderer.domElement);
 
@@ -119,6 +120,7 @@
 	scene.add(fill);
 	var stationLight = new THREE.PointLight(0xffffff, 0, 16, 2);
 	scene.add(stationLight);
+	stationLight.layers.enable(1);
 
 	// Post-processing: soft bloom so LEDs and screens glow like they do in a dark room.
 	// The last pass grades the frame like a film camera would: gamma, a soft
@@ -151,6 +153,11 @@
 			composer.addPass(finish);
 		} catch (e) { composer = null; }
 	}
+	// With post-processing every pass works in linear light and the last one
+	// converts to the screen. One encoding for every pass also keeps three.js
+	// from rebuilding each material's shader twice a frame (once for the
+	// floor's reflection, once for the main view), the main cause of lag.
+	if (composer) renderer.outputEncoding = THREE.LinearEncoding;
 
 	// A dim studio around everything, so metal, glass and paint pick up soft
 	// reflections of long light panels instead of reading flat.
@@ -191,7 +198,8 @@
 		city:    { bg: deep(0x041416), led: C(0x3ff0c8) },
 		mr:      { bg: deep(0x140d08), led: C(0xffb35c) },
 		galaxy:  { bg: deep(0x03060f), led: C(0x56b8ff) },
-		anatomy: { bg: deep(0x150c10), led: C(0xff7a85) },
+		tangible: { bg: deep(0x070d1c), led: C(0x5fa8ff) },
+		coaster: { bg: deep(0x170d06), led: C(0xffa04a) },
 		road:    { bg: deep(0x0d2034), led: C(0xffa23a) },
 		drift:   { bg: deep(0x140b22), led: C(0xb27bff) },
 		shooter: { bg: deep(0x1c0b05), led: C(0xff5a1a) },
@@ -229,6 +237,7 @@
 	var floorUniforms = {
 		uTime: { value: 0 },
 		uSteps: { value: [] },
+		uStepN: { value: 0 },
 		uChar: { value: new THREE.Vector2() },
 		uMouse: { value: new THREE.Vector2() },
 		uMouseOn: { value: 0 },
@@ -259,7 +268,7 @@
 		].join('\n'),
 		fragmentShader: [
 			'#define MAX_STEPS ' + MAX_STEPS,
-			'uniform float uTime; uniform vec4 uSteps[MAX_STEPS]; uniform vec2 uChar; uniform vec2 uMouse; uniform float uMouseOn; uniform vec4 uWave;',
+			'uniform float uTime; uniform vec4 uSteps[MAX_STEPS]; uniform int uStepN; uniform vec2 uChar; uniform vec2 uMouse; uniform float uMouseOn; uniform vec4 uWave;',
 			'uniform vec3 uLed; uniform vec3 uBg; uniform vec4 uLife; uniform vec4 uLife2; uniform vec2 uAt[8];',
 			'uniform float uFogNear; uniform float uFogFar; uniform float uReflect; uniform sampler2D tDiffuse;',
 			'varying vec4 vUv; varying vec3 vW;',
@@ -277,7 +286,7 @@
 			'  c += texture2DProj(tDiffuse, uv + vec4(-k, 0.0, 0.0, 0.0)).rgb * 0.16;',
 			'  c += texture2DProj(tDiffuse, uv + vec4(0.0,  k*1.6, 0.0, 0.0)).rgb * 0.16;',
 			'  c += texture2DProj(tDiffuse, uv + vec4(0.0, -k*1.6, 0.0, 0.0)).rgb * 0.16;',
-			'  return pow(c, vec3(2.2));',
+			'  return c;',
 			'}',
 			'void main(){',
 			'  vec2 p = vW.xz;',
@@ -287,7 +296,9 @@
 			'  float dotm = smoothstep(0.42, 0.2, length(g));',
 			'  float e = 0.035;',
 			'  vec3 col = vec3(0.0);',
+			// only the live footsteps, packed at the front, so most pixels run a short loop
 			'  for (int i = 0; i < MAX_STEPS; i++) {',
+			'    if (i >= uStepN) break;',
 			'    vec4 s = uSteps[i]; float age = uTime - s.z;',
 			'    if (age < 0.0 || age > 4.5) continue;',
 			'    float d = distance(cid, s.xy); float r = age * 1.7;',
@@ -420,7 +431,13 @@
 		floor = new THREE.Mesh(floorGeo, new THREE.ShaderMaterial(floorShader));
 	}
 	var floorU = floor.material.uniforms;
-	var steps = floorU.uSteps.value;
+	var steps = [];
+	for (var i = 0; i < MAX_STEPS; i++) steps.push(new THREE.Vector4(0, 0, -99, 0));
+	function packSteps() {
+		var n = 0, out = floorU.uSteps.value;
+		for (var i = 0; i < MAX_STEPS; i++) { var age = clock - steps[i].z; if (age >= 0 && age <= 4.5 && steps[i].w > 0) out[n++].copy(steps[i]); }
+		floorU.uStepN.value = n;
+	}
 	floor.rotation.x = -Math.PI / 2;
 	floor.position.set(0, 0, END / 2);
 	scene.add(floor);
@@ -724,7 +741,7 @@
 
 	// a small camera that films him for the try-on kiosk's mirror
 	var mirrorRT = new THREE.WebGLRenderTarget(256, 448);
-	mirrorRT.texture.encoding = THREE.sRGBEncoding;
+	mirrorRT.texture.encoding = renderer.outputEncoding;
 	var mirrorCam = new THREE.PerspectiveCamera(24, 256 / 448, 0.1, 10);
 	mirrorCam.layers.set(1);
 	var mirrorWanted = false;
@@ -742,6 +759,7 @@
 			g.scene.traverse(function (o) { if (o.isMesh) { o.frustumCulled = false; if (o.material) { o.material.envMapIntensity = 0.5; } } });
 			var cbs = modelCache[url]; modelCache[url] = { push: function (f) { f(g.scene.clone()); } };
 			cbs.forEach(function (f, i) { f(i ? g.scene.clone() : g.scene); });
+			warmUp(g.scene);
 		}, undefined, function (e) { console.error('Model failed to load: ' + url, e); });
 	}
 
@@ -853,29 +871,48 @@
 		holder.userData.h = h; holder.userData.w = w;
 		mesh.userData.stop = stop;
 		mesh.userData.index = i;
-		var video = null, vtex = null, state = 0;
+		// The clip is only sent to the GPU when it shows a new frame (three.js would
+		// otherwise copy it on every render, twice with the floor's reflection), and
+		// it is unloaded again once he has walked well past, back to the poster.
+		var video = null, vtex = null, lastUp = 0;
 		holder.userData.update = function (life, led) {
 			var b = 0.08 + 0.92 * life;
 			mat.color.setRGB(b, b, b);
 			if (holder.userData.glow) holder.userData.glow.material.color.copy(led).multiplyScalar(0.22 * life);
-			if (life > 0.12 && state === 0) {
-				state = 1;
-				video = document.createElement('video');
-				video.muted = true; video.loop = true; video.playsInline = true; video.setAttribute('playsinline', '');
-				video.preload = 'auto';
-				video.src = stop.getAttribute('data-video');
-				video.addEventListener('playing', function () {
-					if (vtex) return;
-					vtex = new THREE.VideoTexture(video);
+			if (life > 0.12 && !video) {
+				var v = video = document.createElement('video');
+				v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', '');
+				v.preload = 'auto';
+				v.src = stop.getAttribute('data-video');
+				v.addEventListener('playing', function () {
+					if (vtex || video !== v) return;
+					vtex = new THREE.VideoTexture(v);
+					vtex.update = function () {};
 					vtex.encoding = THREE.sRGBEncoding; vtex.minFilter = THREE.LinearFilter; vtex.generateMipmaps = false;
 					if (opts.flipX) { vtex.repeat.x = -1; vtex.offset.x = 1; }
 					mat.map = vtex; mat.needsUpdate = true;
+					if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(function onFrame() {
+						if (video !== v) return;
+						if (vtex) vtex.needsUpdate = true;
+						v.requestVideoFrameCallback(onFrame);
+					});
 				});
 			}
 			if (video) {
 				if (life > 0.12 && video.paused) video.play().catch(function () {});
 				else if (life < 0.04 && !video.paused) video.pause();
+				// no frame callbacks in this browser: copy at most 30 times a second while it plays
+				if (vtex && !video.requestVideoFrameCallback && !video.paused && video.readyState >= 2) {
+					var now = performance.now();
+					if (now - lastUp > 33) { lastUp = now; vtex.needsUpdate = true; }
+				}
 			}
+		};
+		holder.userData.unload = function () {
+			if (!video) return;
+			var v = video; video = null;
+			v.pause(); v.removeAttribute('src'); v.load();
+			if (vtex) { mat.map = poster; mat.needsUpdate = true; vtex.dispose(); vtex = null; }
 		};
 		if (opts.flipX) { poster.repeat.x = -1; poster.offset.x = 1; }
 		screens.push(mesh);
@@ -1466,7 +1503,7 @@
 			ball.position.set(x, 0.08 + arc, z);
 			ball.visible = k > 0.3; ball.scale.setScalar(Math.max(0.001, k));
 			if (k > 0.5 && ((prev % 2 < 0.62 && phase % 2 >= 0.62) || (prev % 2 < 1.38 && phase % 2 >= 1.38))) addRipple(grp.position.x + x, grp.position.z + z, 0.6);
-			hist.unshift(ball.position.clone()); if (hist.length > trailN) hist.pop();
+			hist.unshift((hist.length < trailN ? new THREE.Vector3() : hist.pop()).copy(ball.position));
 			trail.forEach(function (d, j) {
 				var hp = hist[Math.min(j, hist.length - 1)];
 				d.position.copy(hp); d.lookAt(camera.position);
@@ -2186,15 +2223,19 @@
 			threats.forEach(function (th) { th.on = false; th.orb.visible = th.trail.visible = th.flash.visible = false; });
 			shieldU.uTgt.value.forEach(function (v) { v.w = 0; });
 			nextAttack = 0;
+			if (podGlow) podGlow.intensity = podFill.intensity = 0;
 		}
 		st.hide = reset;
 
 		// the ride pod, the metro and the flying cars from the 360 VR film
 		var pod = new THREE.Group(), podBody = new THREE.Group(), podLights = new THREE.Group(), metro = new THREE.Group(), cars = [];
-		pod.rotation.order = 'YXZ'; pod.add(podBody); grp.add(pod); grp.add(podLights);
+		// the lights live in the scene, not the stop, so the number of lights never
+		// changes as the stop shows and hides (that would rebuild every shader)
+		pod.rotation.order = 'YXZ'; pod.add(podBody); grp.add(pod); scene.add(podLights);
 		// lit from our side whichever way it is facing
 		var podGlow = new THREE.PointLight(0x7ffff0, 0, 6, 2); podGlow.position.set(0.3, 0.2, 1.2); podLights.add(podGlow);
 		var podFill = new THREE.PointLight(0xffffff, 0, 7, 2); podFill.position.set(1.5, 1.4, 2.6); podLights.add(podFill);
+		podGlow.layers.enable(1); podFill.layers.enable(1);
 		// thrusters under the back of the pod (its nose is -z)
 		var thrust = [];
 		[-0.6, 0.6].forEach(function (x) {
@@ -2277,7 +2318,7 @@
 			pod.visible = podBody.children.length > 2 && fly > 0.01;
 			podBody.scale.setScalar(Math.max(0.001, fly) * (mobile ? 0.42 : 0.7));
 			flyLoop(pod, FLY.pod, dt, -1, lift);
-			podLights.position.copy(pod.position);
+			podLights.position.copy(pod.position).add(grp.position);
 			podGlow.intensity = 3.0 * smooth(0.4, 1, life);
 			podFill.intensity = 1.6 * smooth(0.4, 1, life);
 			thrust.forEach(function (f, j) { f.material.opacity = fly * (0.75 + 0.25 * Math.sin(t * 17 + j)); f.lookAt(camera.position); });
@@ -2484,6 +2525,7 @@
 			spin += dt * (0.5 + Math.min(3, st.energy || 0));
 			st.energy = (st.energy || 0) * Math.exp(-dt * 1.5);
 			mat.uniforms.uSpin.value = spin;
+			mat.uniforms.uPR.value = renderer.getPixelRatio();
 			mat.uniforms.uLife.value = life;
 			mat.uniforms.uMorph.value = smooth(0.2, 1.0, life);
 			pts.visible = life > 0.01;
@@ -2491,53 +2533,159 @@
 		st.onMouseMove = function (d) { st.energy = Math.min(4, (st.energy || 0) + d * 6); };
 	};
 
-	BUILD.anatomy = function (st, grp) {
-		st.floorKey = 'grid'; st.floorAt = [0.6, -3.0];
-		var geo = new THREE.SphereBufferGeometry(0.5, 128, 90);
-		var p = geo.attributes.position, v = new THREE.Vector3();
-		for (var i = 0; i < p.count; i++) {
-			v.fromBufferAttribute(p, i).normalize();
-			var folds = 0.045 * Math.sin(14 * v.x + 3 * Math.sin(9 * v.y)) * Math.sin(13 * v.y + 2 * Math.cos(8 * v.z)) + 0.03 * Math.sin(17 * v.z + 4 * Math.sin(6 * v.x));
-			var groove = -0.09 * Math.exp(-v.x * v.x * 160) * (v.y > -0.35 ? 1 : 0);
-			var rr = 0.5 + folds + groove;
-			p.setXYZ(i, v.x * rr * 0.92, v.y * rr * 0.8 + (v.y < -0.4 ? 0.05 : 0), v.z * rr * 1.18);
+	// Tangible screen: a touch table tilted up towards you with two checkers
+	// boards on it and a puck on each. Turning a puck turns its board, and under
+	// each puck its three support points light up with the triangle between
+	// them: the angles the software reads to tell one puck from another.
+	BUILD.tangible = function (st, grp) {
+		st.floorKey = 'grid'; st.floorAt = [-0.8, -4.4];
+		var space = textTex(512, 288), sg = space.g;
+		var bgr = sg.createLinearGradient(0, 0, 512, 288);
+		bgr.addColorStop(0, '#08142c'); bgr.addColorStop(1, '#123566');
+		sg.fillStyle = bgr; sg.fillRect(0, 0, 512, 288);
+		for (var i = 0; i < 160; i++) { sg.fillStyle = 'rgba(200,225,255,' + (0.2 + Math.random() * 0.6).toFixed(2) + ')'; sg.fillRect(Math.random() * 512, Math.random() * 288, 1.5, 1.5); }
+		space.t.needsUpdate = true;
+		var board = textTex(256, 256), bg2 = board.g;
+		bg2.fillStyle = '#b8732e'; bg2.fillRect(0, 0, 256, 256);
+		for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) {
+			var dark = (r + c) % 2 === 1;
+			bg2.fillStyle = dark ? '#c4783c' : '#f4efe4'; bg2.fillRect(16 + c * 28, 16 + r * 28, 28, 28);
+			if (dark && (r < 3 || r > 4)) {
+				bg2.fillStyle = r < 3 ? '#2a2a2e' : '#d8706a';
+				bg2.beginPath(); bg2.arc(30 + c * 28, 30 + r * 28, 10, 0, Math.PI * 2); bg2.fill();
+				bg2.strokeStyle = r < 3 ? '#55555c' : '#f0a19a'; bg2.lineWidth = 2; bg2.stroke();
+			}
 		}
-		geo.computeVertexNormals();
-		var brain = new THREE.Mesh(geo, std(0xe39a98, { roughness: 0.5, emissive: 0x3a0a10, emissiveIntensity: 0.4 }));
-		var holder = new THREE.Group();
-		holder.add(brain);
-		grp.add(holder);
-		var lg = new THREE.BufferGeometry();
-		var lp = new Float32Array(6); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
-		var laser = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xff2a3a, transparent: true, opacity: 0 }));
-		laser.frustumCulled = false;
-		scene.add(laser);
-		var dot = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.35, 0.35), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xff2a3a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-		scene.add(dot);
-		// these live in world space, so hide them whenever the stop is out of view
-		laser.visible = dot.visible = false;
-		st.hide = function () { laser.visible = dot.visible = false; };
-		var hand = new THREE.Vector3(), target = new THREE.Vector3();
-		var rx = 0, ry = 0;
+		board.t.needsUpdate = true;
+		var table = new THREE.Group(); grp.add(table);
+		// the top tilts towards the camera so the screen reads from where we stand
+		var deck = new THREE.Group(); deck.position.y = 0.95; deck.rotation.x = 0.55; table.add(deck);
+		var top = new THREE.Mesh(rbox(2.3, 1.35, 0.07, 0.04), std(0x0b0c10, { metalness: 0.8, roughness: 0.3 }));
+		top.rotation.x = -Math.PI / 2; deck.add(top);
+		var glass = new THREE.Mesh(new THREE.PlaneBufferGeometry(2.16, 1.22), new THREE.MeshBasicMaterial({ map: space.t, color: 0x111111, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+		glass.rotation.x = -Math.PI / 2; glass.position.y = 0.045; deck.add(glass);
+		[-0.8, 0.8].forEach(function (x) {
+			var leg = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.04, 0.05, 0.95, 12), std(0x9aa0a8, { metalness: 0.9, roughness: 0.32 }));
+			leg.position.set(x, 0.475, -0.1); table.add(leg);
+		});
+		var boardMat = new THREE.MeshBasicMaterial({ map: board.t, color: 0x111111, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+		var puckMat = std(0x16181d, { metalness: 0.7, roughness: 0.35 });
+		var slots = [[-0.48, 0.12, 0.0, [0, 2.0, 4.1]], [0.5, -0.14, 1.1, [0, 2.4, 3.6]]].map(function (d, j) {
+			var slot = new THREE.Group(); slot.position.set(d[0], 0.06, d[1]); slot.rotation.y = d[2]; deck.add(slot);
+			var b = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.7, 0.7), boardMat); b.rotation.x = -Math.PI / 2; slot.add(b);
+			var puck = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.085, 0.085, 0.05, 28), puckMat); puck.position.y = 0.03; slot.add(puck);
+			var ring = new THREE.Mesh(new THREE.RingBufferGeometry(0.062, 0.078, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+			ring.rotation.x = -Math.PI / 2; ring.position.y = 0.0565; slot.add(ring);
+			// three support points at angles of their own, joined by a triangle
+			var tri = new Float32Array(9), dots = [];
+			d[3].forEach(function (a, k) {
+				var x = Math.cos(a) * 0.15, z = Math.sin(a) * 0.15;
+				tri[k * 3] = x; tri[k * 3 + 1] = 0.014; tri[k * 3 + 2] = z;
+				var dot = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.15, 0.15), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+				dot.rotation.x = -Math.PI / 2; dot.position.set(x, 0.016, z); slot.add(dot); dots.push(dot);
+			});
+			var tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(tri, 3));
+			var line = new THREE.LineLoop(tg, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+			slot.add(line);
+			return { slot: slot, ring: ring, dots: dots, line: line, x: d[0], z: d[1], a: d[2], ph: j * 2.1 };
+		});
 		st.update = function (t, life, dt) {
-			var k = smooth(0.1, 0.9, life);
-			// it floats on his right-hand side, between him and the text, clear of the monitor
-			holder.scale.setScalar(Math.max(0.001, k) * (mobile ? 1 : 1.25));
-			holder.visible = k > 0.005;
-			holder.position.set(mobile ? -1.5 : -1.45, (mobile ? 2.0 : 2.05) + Math.sin(t * 1.3) * 0.06, mobile ? -4.0 : -3.8);
-			ry = damp(ry, mouse.x * 1.4 + t * 0.15, 3, dt);
-			rx = damp(rx, -mouse.y * 0.6, 3, dt);
-			brain.rotation.set(rx, ry, 0);
-			handWorld(hand);
-			holder.getWorldPosition(target);
-			target.x += 0.3; target.y -= 0.1; target.z += 0.2;
-			lp[0] = hand.x; lp[1] = hand.y; lp[2] = hand.z; lp[3] = target.x; lp[4] = target.y; lp[5] = target.z;
-			lg.attributes.position.needsUpdate = true;
-			var on = smooth(0.6, 0.95, life);
-			laser.material.opacity = on * (0.75 + 0.25 * Math.sin(t * 20));
-			laser.visible = on > 0.01;
-			dot.position.copy(target); dot.lookAt(camera.position);
-			dot.material.opacity = on; dot.visible = on > 0.01;
+			var k = easeOut(smooth(0.05, 0.6, life)), on = smooth(0.45, 0.9, life);
+			table.position.set(mobile ? -1.2 : -1.1, 0, mobile ? -6.0 : -4.4);
+			table.rotation.y = mobile ? 0.15 : 0.25;
+			table.scale.setScalar(Math.max(0.001, k) * (mobile ? 0.78 : 1)); table.visible = k > 0.005;
+			var b = 0.15 + 0.85 * k;
+			glass.material.color.setRGB(b, b, b); boardMat.color.setRGB(b, b, b);
+			slots.forEach(function (s, j) {
+				// each puck is turned by an unseen hand, and its board turns with it
+				var turn = Math.sin(t * 0.5 + s.ph) * 0.9 + Math.sin(t * 0.21 + s.ph) * 0.5;
+				s.slot.rotation.y = s.a + turn;
+				s.slot.position.x = s.x + (j ? Math.sin(t * 0.33) * 0.08 : 0);
+				var pulse = on * (0.7 + 0.3 * Math.sin(t * 3 + j));
+				s.ring.material.color.copy(led); s.ring.material.opacity = pulse;
+				s.line.material.color.copy(led); s.line.material.opacity = 0.85 * on;
+				s.dots.forEach(function (d) { d.material.color.copy(led); d.material.opacity = pulse; });
+			});
+		};
+	};
+
+	// Roller coaster with head tracking: a coaster runs a loop behind him while
+	// a face drawn in tracking points looks left and right, and the car's view
+	// (the frame of lines at its nose) turns with it, the way the ride's camera
+	// followed the rider's head.
+	BUILD.coaster = function (st, grp) {
+		var CP = [[-2.4, 0.5, -5.8], [-0.4, 0.45, -5.0], [1.6, 0.8, -5.6], [2.8, 1.9, -7.4], [2.9, 3.3, -9.6], [1.5, 3.7, -11.5],
+			[-0.4, 2.2, -12.0], [-1.9, 0.7, -11.0], [-2.9, 1.5, -9.2], [-3.2, 1.1, -7.4]];
+		var curve = new THREE.CatmullRomCurve3(CP.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); }), true, 'catmullrom', 0.5);
+		var NS = 220, up = new THREE.Vector3(0, 1, 0), side = new THREE.Vector3(), tan = new THREE.Vector3(), p = new THREE.Vector3();
+		var railL = [], railR = [], ys = [];
+		for (var i = 0; i < NS; i++) {
+			curve.getPointAt(i / NS, p); curve.getTangentAt(i / NS, tan);
+			side.crossVectors(tan, up).normalize().multiplyScalar(0.17);
+			railL.push(p.clone().add(side)); railR.push(p.clone().sub(side)); ys.push(p.y);
+		}
+		var track = new THREE.Group(); grp.add(track);
+		var railMat = std(0x1a1b20, { metalness: 0.85, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0 });
+		[railL, railR].forEach(function (pts) { track.add(new THREE.Mesh(new THREE.TubeBufferGeometry(new THREE.CatmullRomCurve3(pts, true), NS * 2, 0.025, 6, true), railMat)); });
+		// sleepers and the posts holding the track up, one draw call each
+		var NT = 110, ties = new THREE.InstancedMesh(new THREE.BoxBufferGeometry(0.46, 0.025, 0.07), std(0x2a2c33, { metalness: 0.5, roughness: 0.5 }), NT);
+		var m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), o3 = new THREE.Object3D();
+		for (var j = 0; j < NT; j++) {
+			curve.getPointAt(j / NT, o3.position); curve.getTangentAt(j / NT, tan);
+			o3.position.y -= 0.03; o3.lookAt(o3.position.clone().add(tan)); o3.updateMatrix();
+			ties.setMatrixAt(j, o3.matrix);
+		}
+		track.add(ties);
+		var NP = 22, posts = new THREE.InstancedMesh(new THREE.CylinderBufferGeometry(0.03, 0.04, 1, 8), std(0x8d939b, { metalness: 0.85, roughness: 0.35 }), NP);
+		for (var k = 0; k < NP; k++) {
+			curve.getPointAt((k + 0.5) / NP, p);
+			q.identity(); sc.set(1, Math.max(0.05, p.y - 0.06), 1);
+			m4.compose(new THREE.Vector3(p.x, (p.y - 0.06) / 2, p.z), q, sc); posts.setMatrixAt(k, m4);
+		}
+		track.add(posts);
+		var ymax = Math.max.apply(null, ys);
+		// the car, and the frame of its view at the nose
+		var car = new THREE.Group(); track.add(car);
+		var body = new THREE.Mesh(rbox(0.46, 0.2, 0.7, 0.06), std(0xd8452b, { metalness: 0.35, roughness: 0.35 })); body.position.y = 0.15; car.add(body);
+		var seat = new THREE.Mesh(rbox(0.4, 0.26, 0.08, 0.03), std(0x16171b, { roughness: 0.6 })); seat.position.set(0, 0.32, -0.18); car.add(seat);
+		var view = new THREE.Group(); view.position.set(0, 0.42, 0.3); car.add(view);
+		var L = 0.95, W = 0.42, H = 0.26;
+		var fv = new Float32Array([0, 0, 0, -W, H, L, 0, 0, 0, W, H, L, 0, 0, 0, -W, -H, L, 0, 0, 0, W, -H, L,
+			-W, H, L, W, H, L, W, H, L, W, -H, L, W, -H, L, -W, -H, L, -W, -H, L, -W, H, L]);
+		var fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(fv, 3));
+		var frustum = new THREE.LineSegments(fg, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+		view.add(frustum);
+		// a face traced in tracking points, like a face mesh
+		var fp = [];
+		for (var a = -1.15; a <= 1.15; a += 0.13) for (var b = -1.05; b <= 0.95; b += 0.13) {
+			var jx = (Math.random() - 0.5) * 0.05, jy = (Math.random() - 0.5) * 0.05;
+			fp.push(0.3 * Math.sin(a + jx) * Math.cos(b + jy), 0.4 * Math.sin(b + jy), 0.27 * Math.cos(a + jx) * Math.cos(b + jy));
+		}
+		[[-0.11, 0.07], [0.11, 0.07]].forEach(function (e) { for (var a2 = 0; a2 < 6.28; a2 += 0.45) fp.push(e[0] + Math.cos(a2) * 0.05, e[1] + Math.sin(a2) * 0.025, 0.27); });
+		for (var a3 = -0.6; a3 <= 0.6; a3 += 0.15) fp.push(Math.sin(a3) * 0.1, -0.17 - Math.cos(a3 * 2) * 0.012, 0.265);
+		for (var a4 = 0; a4 < 5; a4++) fp.push(0, 0.03 - a4 * 0.035, 0.29 + a4 * 0.008);
+		var faceG = new THREE.BufferGeometry(); faceG.setAttribute('position', new THREE.BufferAttribute(new Float32Array(fp), 3));
+		var faceMat = new THREE.PointsMaterial({ size: 0.05, map: glowTex, color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+		var face = new THREE.Points(faceG, faceMat); grp.add(face);
+		var u = 0, yaw = 0;
+		st.update = function (t, life, dt) {
+			var kk = easeOut(smooth(0.05, 0.65, life)), on = smooth(0.4, 0.9, life);
+			track.position.set(mobile ? 0.5 : 0.6, 0, mobile ? -1.5 : 0);
+			track.scale.set(1, Math.max(0.001, kk), 1); track.visible = kk > 0.005;
+			railMat.emissive.copy(led); railMat.emissiveIntensity = 0.35 * on;
+			// faster down the drops, slower up the climbs
+			curve.getPointAt(u, p);
+			u = (u + dt * (0.6 + Math.sqrt(Math.max(0, ymax - p.y)) * 0.75) / curve.getLength()) % 1;
+			curve.getPointAt(u, car.position); curve.getTangentAt(u, tan);
+			car.lookAt(track.localToWorld(tan.add(car.position)));
+			car.visible = kk > 0.5;
+			// the rider looks around, and a little towards the pointer
+			yaw = damp(yaw, Math.sin(t * 0.6) * 0.75 + Math.sin(t * 1.7) * 0.12 + mouse.x * 0.3, 4, dt);
+			view.rotation.y = yaw;
+			frustum.material.color.copy(led); frustum.material.opacity = 0.9 * on;
+			face.position.set(mobile ? -1.35 : -1.5, (mobile ? 2.05 : 2.1) + Math.sin(t * 1.1) * 0.04, mobile ? -4.0 : -3.8);
+			face.rotation.y = yaw; face.scale.setScalar(Math.max(0.001, kk) * (mobile ? 1.1 : 1.4));
+			faceMat.color.copy(led); faceMat.opacity = on; face.visible = on > 0.01;
 		};
 	};
 
@@ -3031,6 +3179,54 @@
 	var running = true;
 	var CAM_SHIFT = { intro: -0.9, about: -1.0, contact: -0.4 };
 
+	// Shaders are built ahead of time, a stop at a time while he stands still,
+	// so walking into a stop never stalls while its materials compile.
+	var warmQ = null, warmTick = 0;
+	var warmScene = { isScene: true, fog: scene.fog, environment: null, overrideMaterial: null, traverse: null,
+		traverseVisible: function (cb) { scene.traverseVisible(cb); } };
+	function warmUp(obj) {
+		warmScene.environment = scene.environment;
+		warmScene.traverse = function (cb) { obj.traverse(cb); };
+		try { renderer.compile(warmScene, camera); } catch (e) {}
+	}
+
+	// Quality follows the device. When frames keep running slow the picture
+	// steps down: a lower resolution first, then no floor reflection, then no glow.
+	var QUALITY = [
+		{ dpr: 1 }, { dpr: 0.85 }, { dpr: 0.72 },
+		{ dpr: 0.72, noReflect: true },
+		{ dpr: 0.6, noReflect: true, noBloom: true }
+	];
+	var quality = { level: 0, gaps: [], since: 0, slow: 0 };
+	function setQuality(n) {
+		var q = QUALITY[n];
+		quality.level = n;
+		renderer.setPixelRatio(Math.max(0.6, baseDpr * q.dpr));
+		if (q.noReflect && fancy) { floor.onBeforeRender = function () {}; floorU.uReflect.value = 0; }
+		if (q.noBloom && composer) {
+			composer = null;
+			renderer.outputEncoding = mirrorRT.texture.encoding = THREE.sRGBEncoding;
+		}
+		lastW = 0; resize();
+	}
+	function watchFrames(gap) {
+		// only steady walking counts: skip loading, hidden tabs and the video player
+		if (clock < 3 || gap > 250 || player.hasAttribute('open')) { quality.gaps.length = 0; return; }
+		quality.gaps.push(gap);
+		if (quality.gaps.length < 90) return;
+		var g = quality.gaps.sort(function (a, b) { return a - b; })[quality.gaps.length >> 1];
+		quality.gaps.length = 0;
+		// under about 45 frames a second twice in a row: step down
+		quality.slow = g > 22 ? quality.slow + 1 : 0;
+		if (quality.slow < 2 || quality.level >= QUALITY.length - 1) return;
+		quality.slow = 0;
+		// far too slow (under 25 a second): skip a step
+		var n = Math.min(QUALITY.length - 1, quality.level + (g > 40 ? 2 : 1));
+		// without the reflection and glow (phones) the steps that only drop those change nothing
+		while (n < QUALITY.length - 1 && !fancy && QUALITY[n].dpr === QUALITY[quality.level].dpr) n++;
+		setQuality(n);
+	}
+
 	function lifeTarget(st, s) {
 		var d = s - st.s;
 		if (!st.rise) return smooth(S * 0.7, S * 0.15, Math.abs(d));
@@ -3038,10 +3234,14 @@
 		return smooth(-3.2, -0.4, d) * (1 - smooth(S * 0.5, S * 0.85, d));
 	}
 
+	var lastW = 0, lastH = 0;
 	function resize() {
 		var w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight;
+		// a phone's toolbar sliding away fires resize without changing the canvas
+		if (w === lastW && h === lastH) { measure(); return; }
+		lastW = w; lastH = h;
 		renderer.setSize(w, h, false);
-		if (composer) composer.setSize(w, h);
+		if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
 		camera.aspect = w / h;
 		mobile = w < 1000;
 		camera.fov = mobile ? 54 : 36;
@@ -3060,6 +3260,7 @@
 	function frame(now) {
 		if (!running) return;
 		var dt = Math.max(0, Math.min(0.05, (now - lastT) / 1000));
+		watchFrames(now - lastT);
 		lastT = now;
 		clock += dt;
 		var t = clock;
@@ -3152,7 +3353,7 @@
 		for (k = 0; k < 8; k++) if (fW[k] > 0) floorU.uAt.value[k].set(fX[k] / fW[k], fZ[k] / fW[k]);
 		floorU.uLife.value.set(fLife[0], fLife[1], fLife[2], fLife[3]);
 		floorU.uLife2.value.set(fLife[4], fLife[5], fLife[6], fLife[7]);
-		floorU.uTime.value = t;
+		floorU.uTime.value = t; packSteps();
 		floorU.uChar.value.set(px0, charS + 0.1);
 
 		// pointer on the floor
@@ -3172,8 +3373,11 @@
 			var vis = Math.abs(st.s - charS) < S * 1.3 || (st.s < charS && charS - st.s < S * 1.6);
 			// a stop that hasn't started rising yet draws nothing
 			st.group.visible = vis && (!st.rise || st.life > 0.003);
+			var far = Math.abs(st.s - charS);
+			if (st.screen && st.screen.userData.unload && far > S * 2.5) st.screen.userData.unload();
+			// models load a little before the stop comes into view
+			if (st.lazy && far < S * 2.4) { st.lazy(); st.lazy = null; }
 			if (!vis) { if (st.hide) st.hide(); return; }
-			if (st.lazy && st.life > 0.005) { st.lazy(); st.lazy = null; }
 			if (st.rise && st.life > 0.08 && !st.waved) { st.waved = true; floorU.uWave.value.set(person.position.x, person.position.z, t, 1); }
 			else if (st.life < 0.02) st.waved = false;
 			if (st.screen) {
@@ -3235,12 +3439,13 @@
 			mirrorWanted = false;
 			mirrorCam.position.set(px0 + Math.sin(pose.yaw) * 2.6, 1.45, charS + Math.cos(pose.yaw) * 2.6);
 			mirrorCam.lookAt(px0, 1.35, charS);
-			var oldBg = scene.background, oldFog = scene.fog;
-			scene.background = null; scene.fog = null;
+			// push the fog away rather than removing it: taking it out would rebuild his shaders
+			var oldBg = scene.background, fogN = scene.fog.near, fogF = scene.fog.far;
+			scene.background = null; scene.fog.near = 1e4; scene.fog.far = 2e4;
 			renderer.setRenderTarget(mirrorRT); renderer.setClearColor(0x000000, 0); renderer.clear();
 			renderer.render(scene, mirrorCam);
 			renderer.setRenderTarget(null); renderer.setClearColor(0x000000, 1);
-			scene.background = oldBg; scene.fog = oldFog;
+			scene.background = oldBg; scene.fog.near = fogN; scene.fog.far = fogF;
 		}
 
 		// camera: just ahead of him, slightly to his right, looking back along the path
@@ -3281,6 +3486,10 @@
 		var pct = Math.round(charS / END * 100);
 		if (pct !== lastPct) { lastPct = pct; track.setAttribute('aria-valuenow', pct); }
 		if (near && near.i !== lastNear) { lastNear = near.i; track.setAttribute('aria-valuetext', tipLabels[near.i].year + ', ' + tipLabels[near.i].name); }
+
+		if (!warmQ) warmQ = stations.slice().sort(function (a, b) { return Math.abs(a.s - charS) - Math.abs(b.s - charS); })
+			.map(function (st) { return st.group; }).concat([scene]);
+		if (warmQ.length && pose.move < 0.05 && ++warmTick % 6 === 0) warmUp(warmQ.shift());
 
 		if (finish) finish.uniforms.uTime.value = t;
 		if (composer) composer.render(dt); else renderer.render(scene, camera);
