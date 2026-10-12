@@ -61,6 +61,8 @@ h1, h2 { text-wrap: balance; }
 	inset: 0;
 	z-index: 0;
 }
+/* the large viewport height, so a phone's toolbar sliding in and out never resizes the 3D view */
+@supports (height: 100lvh) { .world { bottom: auto; height: 100lvh; } }
 #scene, #scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #scene canvas { cursor: default; touch-action: pan-y; }
 #scene canvas.is-pointing { cursor: pointer; }
@@ -166,6 +168,7 @@ h1, h2 { text-wrap: balance; }
 	transition: opacity 0.15s, transform 0.15s;
 }
 .track-tip b { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-tip b:empty { display: none; }
 .track-tip.is-on { opacity: 1; transform: translate(-50%, 0); }
 .hud-chapter { min-width: 9rem; text-align: right; }
 
