@@ -504,7 +504,7 @@
 	// what he does while standing: a calm breathing idle, a nod when he arrives,
 	// now and then a few words with his hands, and his eyes on you or the project
 	var act = { still: 0, nod: 0, nodOn: false, talk: 0, talkOn: false, talkEnd: 0, nextTalk: 3.5, at: null,
-		lookQ: new THREE.Quaternion(), lookW: 0, focus: 0, focusEnd: 0, glance: new THREE.Vector3() };
+		lookQ: new THREE.Quaternion(), lookW: 0, focus: 0, focusEnd: 0, glance: new THREE.Vector3(), sweep: 0, lookYaw: 0, body: 0 };
 
 	function radialTex(inner, outer) {
 		var c = document.createElement('canvas'); c.width = c.height = 128;
@@ -626,7 +626,9 @@
 				if (c.name === 'calm') { calmA = a; a.play(); }
 				if (c.name === 'nod') { nodA = a; a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
 			});
-			if (!calmA) { calmA = talkA; talkA = null; }
+			// the talking clip is only a fallback idle now
+			if (calmA) { talkA.stop(); talkA = null; } else { calmA = talkA; talkA = null; }
+			if (nodA) nodA.stop();
 			// sunglasses for the try-on stop: three frames that swap on his face. The
 			// frame sits where his eyes are on this mesh, measured in the bind pose:
 			// about 10 cm above the head joint and 15.6 cm in front of it.
@@ -658,28 +660,24 @@
 	}
 	// Standing still he breathes, nods when he arrives and, now and then, says a few
 	// words with his hands; the weights are blended in the frame loop.
+	// Standing at a stop he observes: he takes the project in first, then looks
+	// around the scene and back to you now and then, turning his body a little
+	// towards whatever holds his attention. No talking.
 	function updateActs(dt, near) {
 		var standing = pose.move < 0.06 && pose.turn < 0.5;
 		act.still = standing ? act.still + dt : 0;
 		var here = near && near.life > 0.6 ? near : null;
-		if (!standing) { act.at = null; act.nodOn = false; act.talkOn = false; act.nextTalk = 3 + Math.random() * 2; act.focus = 0; act.focusEnd = 0.8; }
+		if (!standing) { act.at = null; act.focus = 0; act.focusEnd = 0.8; }
 		if (here && act.at !== here && act.still > 0.3) {
 			act.at = here;
-			if (nodA) { nodA.reset(); nodA.play(); act.nodOn = true; }
-			// a first look at the project, then back to you
-			act.focus = 1; act.focusEnd = act.still + 1.4;
+			if (here.lookAt || here.screen) { act.focus = 1; act.focusEnd = act.still + 2.6 + Math.random(); }
 		}
-		if (act.nodOn && (!nodA || nodA.time > nodA.getClip().duration - 0.35)) act.nodOn = false;
-		if (talkA && here && !here.quiet && !act.talkOn && !act.nodOn && act.still > act.nextTalk) {
-			talkA.time = 0; act.talkOn = true; act.talkEnd = act.still + talkA.getClip().duration - 0.3;
-		}
-		if (act.talkOn && act.still > act.talkEnd) { act.talkOn = false; act.nextTalk = act.still + 4 + Math.random() * 5; }
-		act.nod = damp(act.nod, act.nodOn ? 1 : 0, act.nodOn ? 6 : 3, dt);
-		act.talk = damp(act.talk, act.talkOn ? 0.9 : 0, 2.6, dt);
+		var to = standing && act.focus ? Math.max(-0.3, Math.min(0.3, act.lookYaw * 0.35)) : 0;
+		act.body = damp(act.body, to, 0.9, dt);
 	}
 
 	// Head and neck turn to what he is looking at, on top of whatever the clips are
-	// doing: mostly you, a glance at the project, sometimes a look away.
+	// doing: the project, the scene around it, or you.
 	var _lk = new THREE.Vector3(), _hp = new THREE.Vector3(), _lq = new THREE.Quaternion(), _wq = new THREE.Quaternion(), _pq = new THREE.Quaternion(), _iq = new THREE.Quaternion(), _pi = new THREE.Quaternion();
 	var _z = new THREE.Vector3(0, 0, 1), _ld = new THREE.Vector3();
 	var LOOK = [['mixamorigSpine2', 0.18], ['mixamorigNeck', 0.34], ['mixamorigHead', 0.48]];
@@ -687,13 +685,18 @@
 		var head = bones.mixamorigHead;
 		if (!head) return;
 		if (act.still > act.focusEnd) {
-			if (act.focus === 0) {
-				var r = Math.random(), toProject = near && (near.lookAt || near.screen);
-				act.focus = toProject && r < (near.quiet ? 0.6 : 0.4) ? 1 : 2;
-				act.focusEnd = act.still + 1 + Math.random() * 1.2;
-				act.glance.set((Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.4), -0.12 - Math.random() * 0.18, 1);
-			} else { act.focus = 0; act.focusEnd = act.still + 3 + Math.random() * 3.5; }
+			var r = Math.random(), toProject = near && near.life > 0.5 && (near.lookAt || near.screen);
+			if (act.focus !== 0 && r < 0.3) { act.focus = 0; act.focusEnd = act.still + 1.6 + Math.random() * 1.4; }
+			else if (toProject && act.focus !== 1 && r < (near.quiet ? 0.9 : 0.75)) { act.focus = 1; act.focusEnd = act.still + 2.4 + Math.random() * 2; }
+			else {
+				// a slow look across the scene: to one side, up at the build or down at the floor
+				act.focus = 2; act.focusEnd = act.still + 1.8 + Math.random() * 1.6;
+				var side = act.glance.x > 0 ? -1 : 1;
+				act.glance.set(side * (0.45 + Math.random() * 0.5), Math.random() < 0.25 ? -0.3 : 0.05 + Math.random() * 0.2, 1);
+				act.sweep = -side * (0.08 + Math.random() * 0.08);
+			}
 		}
+		if (act.focus === 2) act.glance.x += act.sweep * dt;
 		head.getWorldPosition(_hp);
 		if (act.focus === 1 && near && near.lookAt) near.lookAt(_lk);
 		else if (act.focus === 1 && near && near.screen && near.screen.visible) near.screen.getWorldPosition(_lk);
@@ -703,6 +706,7 @@
 		_pi.copy(person.quaternion).invert();
 		_ld.copy(_lk).sub(_hp).applyQuaternion(_pi).normalize();
 		var yaw = Math.atan2(_ld.x, _ld.z), pitch = Math.asin(Math.max(-1, Math.min(1, _ld.y)));
+		act.lookYaw = yaw;
 		// nobody looks straight back over their shoulder: walking away from you, he looks ahead
 		if (Math.abs(yaw) > 2.6) yaw = pitch = 0;
 		yaw = Math.max(-1.05, Math.min(1.05, yaw)); pitch = Math.max(-0.35, Math.min(0.3, pitch));
@@ -710,7 +714,8 @@
 		_lq.setFromUnitVectors(_z, _ld);
 		act.lookW = damp(act.lookW, 1 - 0.75 * smooth(0.1, 0.6, pose.move), 3, dt);
 		_iq.identity().slerp(_lq, act.lookW);
-		act.lookQ.slerp(_iq, 1 - Math.exp(-4.2 * dt));
+		// unhurried head turns while he stands, quicker ones on the move
+		act.lookQ.slerp(_iq, 1 - Math.exp(-(pose.move < 0.1 ? 2.4 : 4.2) * dt));
 		// share the turn down the spine, neck and head, applied in world space
 		_wq.copy(person.quaternion).multiply(act.lookQ).multiply(_pi);
 		LOOK.forEach(function (l) {
@@ -3293,11 +3298,8 @@
 			var w = smooth(0.0, 0.6, stepping);
 			updateActs(dt, near);
 			// standing: the calm idle, with the nod and the talking clip blended over it
-			var rest = 1 - w, wn = nodA ? rest * act.nod : 0, wt = talkA ? rest * (1 - act.nod) * act.talk : 0;
 			walkA.setEffectiveWeight(w);
-			if (nodA) nodA.setEffectiveWeight(wn);
-			if (talkA) talkA.setEffectiveWeight(wt);
-			calmA.setEffectiveWeight(rest - wn - wt);
+			calmA.setEffectiveWeight(1 - w);
 			// the mixer only writes a bone when its value changes, so put back the pose it
 			// last wrote before the head turn was layered on, or the turn would pile up
 			LOOK.forEach(function (l) { var b = bones[l[0]]; if (b && b.userData.base) b.quaternion.copy(b.userData.base); });
@@ -3406,7 +3408,7 @@
 		if (back) pose.facing = Math.PI; else if (fwd) pose.facing = 0;
 		var want = (pose.facing || 0) + (pose.facing ? -heading : heading);
 		// standing, he squares up to you and stays put; his head does the looking
-		if (pose.move < 0.1) want = (camera.position.x - px0) * 0.05 + (near && near.stance || 0);
+		if (pose.move < 0.1) want = (camera.position.x - px0) * 0.05 + (near && near.stance || 0) + act.body;
 		var dy = ((want - pose.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 		var dYaw = dy * (1 - Math.exp(-(pose.move < 0.1 ? 3.4 : 5) * dt));
 		pose.yaw += dYaw;
