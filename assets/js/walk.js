@@ -492,18 +492,18 @@
 
 	/* ---------- Burhan (3D avatar) ---------- */
 
-	// A rigged character from the Dubai Police 360 VR project, re-dressed in a
-	// charcoal overshirt, jeans and brown shoes, walking with a captured walk
-	// cycle and presenting with a captured talking idle at each project.
-	var HEIGHT = 1.82;
+	// His digital double (media/avatar/burhan.glb): built from his photos, skinned to
+	// Mixamo-named bones, with its own walk and a calm idle that breathes, shifts its
+	// weight, moves the eyes and blinks. The model is 1.80 m tall.
+	var HEIGHT = 1.82, MODEL_H = 1.80;
 	var person = new THREE.Group();
 	scene.add(person);
-	var avatar = null, mixer = null, walkA = null, talkA = null, calmA = null, nodA = null, walkDur = 1, STRIDE = 1.83 * (HEIGHT / 1.68);
+	// the planted foot travels about 1.92 m a cycle in the walk clip
+	var avatar = null, mixer = null, walkA = null, calmA = null, walkDur = 1, STRIDE = 1.92 * (HEIGHT / MODEL_H);
 	var bones = {}, glasses = new THREE.Group();
 	var pose = { move: 0, glasses: 0, yaw: 0, walkT: 0, lastHalf: 0, turn: 0 };
-	// what he does while standing: a calm breathing idle, a nod when he arrives,
-	// now and then a few words with his hands, and his eyes on you or the project
-	var act = { still: 0, nod: 0, nodOn: false, talk: 0, talkOn: false, talkEnd: 0, nextTalk: 3.5, at: null,
+	// what he does while standing: the idle, his eyes on the project, the scene or you
+	var act = { still: 0, at: null,
 		lookQ: new THREE.Quaternion(), lookW: 0, focus: 0, focusEnd: 0, glance: new THREE.Vector3(), sweep: 0, lookYaw: 0, body: 0 };
 
 	function radialTex(inner, outer) {
@@ -589,67 +589,55 @@
 
 	(function loadAvatar() {
 		if (!THREE.GLTFLoader) return;
-		var L = new THREE.GLTFLoader(), got = {};
-		function done() {
-			if (!got.body || !got.walk || !got.idle || !got.moves) return;
-			avatar = got.body.scene;
-			avatar.scale.setScalar(HEIGHT / 1.68);
+		new THREE.GLTFLoader().load('media/avatar/burhan.glb', function (g) {
+			avatar = g.scene;
+			avatar.scale.setScalar(HEIGHT / MODEL_H);
+			// one mesh per material, all on the same skin: let them share one skeleton
+			// so its bones are worked out once a frame instead of once per material
+			var skel = null;
 			avatar.traverse(function (o) {
 				if (o.isBone) bones[o.name] = o;
 				if (o.isMesh) {
 					o.frustumCulled = false;
 					o.layers.enable(1);
-					var m = o.material;
-					m.skinning = true; m.roughness = 0.72; m.metalness = 0.0; m.envMapIntensity = 0.6;
-					m.needsUpdate = true;
+					o.material.envMapIntensity = 0.6;
 				}
+				if (o.isSkinnedMesh) { if (!skel) skel = o.skeleton; else o.skeleton = skel; }
 			});
 			person.add(avatar);
+			person.updateWorldMatrix(true, true);
+			// how high each ankle and toe joint sits above the soles, from the bind pose
+			var v = new THREE.Vector3(), base = avatar.getWorldPosition(v).y;
+			FEET.forEach(function (f) { if (bones[f[0]]) f[1] = bones[f[0]].getWorldPosition(v).y - base; });
+			var clip = function (n) { return g.animations.filter(function (a) { return a.name === n; })[0]; };
+			var walk = clip('Walk'), idle = clip('Idle');
 			// keep him walking on the spot: the scroll moves him, not the clip
-			var clip = got.walk.animations[0];
-			clip.tracks.forEach(function (tr) {
+			walk.tracks.forEach(function (tr) {
 				if (/Hips\.position$/.test(tr.name)) {
-					var v = tr.values, x0 = v[0], z0 = v[2];
-					for (var i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
+					var p = tr.values, x0 = p[0], z0 = p[2];
+					for (var i = 0; i < p.length; i += 3) { p[i] = x0; p[i + 2] = z0; }
 				}
 			});
-			var talkClip = got.idle.animations[0];
 			mixer = new THREE.AnimationMixer(avatar);
-			walkA = mixer.clipAction(clip); walkA.play(); walkA.timeScale = 0;
-			talkA = mixer.clipAction(talkClip); talkA.play();
-			walkDur = clip.duration;
-			// a calm standing idle and a nod, retargeted to his rig (media/avatar/moves.json)
-			(got.moves.clips || []).forEach(function (c) {
-				var clip = THREE.AnimationClip.parse(c);
-				clip.uuid = THREE.MathUtils.generateUUID(); // parse() copies a missing uuid, and the mixer keys actions by it
-				var a = mixer.clipAction(clip);
-				if (c.name === 'calm') { calmA = a; a.play(); }
-				if (c.name === 'nod') { nodA = a; a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
-			});
-			// the talking clip is only a fallback idle now
-			if (calmA) { talkA.stop(); talkA = null; } else { calmA = talkA; talkA = null; }
-			if (nodA) nodA.stop();
-			// sunglasses for the try-on stop: three frames that swap on his face. The
-			// frame sits where his eyes are on this mesh, measured in the bind pose:
-			// about 10 cm above the head joint and 15.6 cm in front of it.
-			var head = bones['mixamorigHead'] || bones['mixamorig:Head'];
-			if (head) {
-				var hs = 1 / (avatar.scale.x * worldScaleOf(head));
-				glasses.scale.setScalar(hs);
-				glasses.position.set(0, 0.0951, 0.1440);
-				GLASSES.forEach(function (g) { var m = makeGlasses(g); m.visible = false; glasses.add(m); });
+			walkA = mixer.clipAction(walk); walkA.play(); walkA.timeScale = 0;
+			calmA = mixer.clipAction(idle); calmA.play();
+			walkDur = walk.duration;
+			// sunglasses for the try-on stop: three frames that swap on his face, centred
+			// just in front of his eyes and squared to his face in the bind pose
+			var head = bones.mixamorigHead, eL = bones.Eye_L, eR = bones.Eye_R;
+			if (head && eL && eR) {
+				var ws = avatar.getWorldScale(new THREE.Vector3()).x, aq = avatar.getWorldQuaternion(new THREE.Quaternion());
+				var mid = eL.getWorldPosition(new THREE.Vector3()).add(eR.getWorldPosition(v)).multiplyScalar(0.5);
+				mid.add(new THREE.Vector3(0, 0, 0.026 * ws).applyQuaternion(aq));
+				glasses.position.copy(head.worldToLocal(mid));
+				glasses.quaternion.copy(head.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(aq));
+				glasses.scale.setScalar(ws / head.getWorldScale(v).x);
+				GLASSES.forEach(function (gl) { var m = makeGlasses(gl); m.visible = false; glasses.add(m); });
 				glasses.traverse(function (o) { o.layers.enable(1); });
 				glasses.visible = false;
 				head.add(glasses);
 			}
-		}
-		function worldScaleOf(o) { var v = new THREE.Vector3(); o.updateMatrixWorld(true); o.getWorldScale(v); return v.x / (HEIGHT / 1.68); }
-		function fail(e) { console.error('Avatar failed to load', e); }
-		L.load('media/avatar/burhan-avatar.glb', function (g) { got.body = g; done(); }, undefined, fail);
-		L.load('media/avatar/walk.glb', function (g) { got.walk = g; done(); }, undefined, fail);
-		L.load('media/avatar/idle.glb', function (g) { got.idle = g; done(); }, undefined, fail);
-		var F = new THREE.FileLoader(); F.setResponseType('json');
-		F.load('media/avatar/moves.json', function (j) { got.moves = j; done(); }, undefined, function () { got.moves = { clips: [] }; done(); });
+		}, undefined, function (e) { console.error('Avatar failed to load', e); });
 	})();
 
 	var _hand = new THREE.Vector3();
@@ -658,11 +646,9 @@
 		if (b) return b.getWorldPosition(out);
 		return out.set(person.position.x + 0.3, 1.0, person.position.z);
 	}
-	// Standing still he breathes, nods when he arrives and, now and then, says a few
-	// words with his hands; the weights are blended in the frame loop.
 	// Standing at a stop he observes: he takes the project in first, then looks
 	// around the scene and back to you now and then, turning his body a little
-	// towards whatever holds his attention. No talking.
+	// towards whatever holds his attention.
 	function updateActs(dt, near) {
 		var standing = pose.move < 0.06 && pose.turn < 0.5;
 		act.still = standing ? act.still + dt : 0;
@@ -729,7 +715,7 @@
 	}
 
 	// keep his soles on the floor whatever mix of clips is playing
-	var FEET = [['mixamorigLeftFoot', 0.116], ['mixamorigRightFoot', 0.116], ['mixamorigLeftToeBase', 0.023], ['mixamorigRightToeBase', 0.023]];
+	var FEET = [['mixamorigLeftFoot', 0.1], ['mixamorigRightFoot', 0.1], ['mixamorigLeftToeBase', 0.055], ['mixamorigRightToeBase', 0.055]];
 	function groundFeet(dt) {
 		var lo = Infinity;
 		FEET.forEach(function (f) { var b = bones[f[0]]; if (b) lo = Math.min(lo, b.getWorldPosition(_lk).y - f[1]); });
@@ -3294,10 +3280,12 @@
 			pose.walkT = damp(pose.walkT, tgt, 4, dt);
 		}
 		if (mixer) {
-			walkA.time = pose.walkT % walkDur;
+			// the walk clip is stored running backwards (its feet slide forward on the
+			// ground), so it plays in reverse
+			walkA.time = (walkDur - pose.walkT % walkDur) % walkDur;
 			var w = smooth(0.0, 0.6, stepping);
 			updateActs(dt, near);
-			// standing: the calm idle, with the nod and the talking clip blended over it
+			// walking blends into the idle as he slows down
 			walkA.setEffectiveWeight(w);
 			calmA.setEffectiveWeight(1 - w);
 			// the mixer only writes a bone when its value changes, so put back the pose it
@@ -3407,7 +3395,7 @@
 		var back = ds < -0.0008, fwd = ds > 0.0008;
 		if (back) pose.facing = Math.PI; else if (fwd) pose.facing = 0;
 		var want = (pose.facing || 0) + (pose.facing ? -heading : heading);
-		// standing, he squares up to you and stays put; his head does the looking
+		// standing, he squares up to you and stays put, turning a little towards what he looks at
 		if (pose.move < 0.1) want = (camera.position.x - px0) * 0.05 + (near && near.stance || 0) + act.body;
 		var dy = ((want - pose.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 		var dYaw = dy * (1 - Math.exp(-(pose.move < 0.1 ? 3.4 : 5) * dt));
